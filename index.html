@@ -32,6 +32,7 @@
   .b-send { background: #7c3aed; }
   .b-manual { background: #0891b2; }
   .b-dash { background: #6366f1; }
+  .b-phe { background: #dc2626; }
   .search { width: 100%; padding: 12px; font-size: 16px; border: 1px solid #cfd6e0; border-radius: 10px; margin-bottom: 10px; }
   .list { max-height: 52vh; overflow-y: auto; }
   .item { width: 100%; text-align: left; background: #f3f6fa; color: #15181d; border: 1px solid #e3e8ef; border-radius: 10px; padding: 13px; margin-bottom: 8px; font-weight: 600; }
@@ -97,6 +98,7 @@
     <button class="b-in big full" data-mode="In">🖨️<br>In</button>
   </div>
   <button class="b-dash full" id="btnDashboard" style="margin-top:12px">📊 Kiểm tra kết quả</button>
+  <button class="b-phe full" id="btnPhe" style="margin-top:8px">🗑️ Nhập Phế</button>
 </div>
 
 <!-- BƯỚC 2: Công nhân -->
@@ -187,6 +189,28 @@
   <button class="b-back full" id="dashBack" style="margin-top:12px">← Về trang chính</button>
 </div>
 
+<!-- BƯỚC 6: Nhập Phế — chọn công đoạn -->
+<div class="card step hide" id="step6">
+  <p class="steptitle">🗑️ Nhập Phế — Chọn công đoạn</p>
+  <div class="row">
+    <button class="b-thoi big full" data-phe-mode="Thổi">💨<br>Thổi</button>
+    <button class="b-in big full" data-phe-mode="In">🖨️<br>In</button>
+  </div>
+  <button class="b-back full" id="pheBack1" style="margin-top:8px">← Về trang chính</button>
+</div>
+
+<!-- BƯỚC 7: Nhập Phế — form nhập -->
+<div class="card step hide" id="step7">
+  <div class="ctx" id="pheCtx"></div>
+  <p class="steptitle">Nhập khối lượng phế (kg)</p>
+  <label>Phế trơn (kg)</label>
+  <input class="fld" id="pheTron" placeholder="0" autocomplete="off" inputmode="decimal" enterkeyhint="next">
+  <label>Phế màu (kg)</label>
+  <input class="fld" id="pheMau" placeholder="0" autocomplete="off" inputmode="decimal" enterkeyhint="done">
+  <button class="b-send full" id="btnPheSend" style="margin-top:12px">📤 Gửi phế</button>
+  <button class="b-back full" id="pheBack3" style="margin-top:8px">← Đổi CN/Máy</button>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <!-- Modal PIN -->
@@ -236,6 +260,7 @@ let sentRolls = 0;       // số cuộn đã gửi trong phiên
 let dashData = [];       // dữ liệu Master từ Sheet
 let dashFilter = 'all';  // filter hiện tại
 let pendingAction = null; // hành động chờ sau khi nhập PIN
+let appMode = 'sx';      // 'sx' = sản xuất, 'phe' = nhập phế
 // Hàng đợi gửi (lưu trên máy) — mất mạng vẫn giữ, có mạng tự gửi
 let queue = JSON.parse(localStorage.getItem(QKEY) || '[]');
 let flushing = false;
@@ -305,9 +330,13 @@ function renderPicker(kind){
 }
 function pick(kind, value){
   if (kind==='cn'){ sel.cn = value; updateCrumbs(); renderPicker('may'); show('step3'); }
-  else { sel.may = value; updateCrumbs(); enterStep4(); }
+  else {
+    sel.may = value; updateCrumbs();
+    if (appMode === 'phe') enterPheForm();
+    else enterStep4();
+  }
 }
-$('cnBack').onclick = () => show('step1');
+$('cnBack').onclick = () => { if (appMode==='phe') show('step6'); else show('step1'); };
 $('myBack').onclick = () => { renderPicker('cn'); show('step2'); };
 
 // ---------- Bước 4 ----------
@@ -615,6 +644,57 @@ $('btnConfirmSend').onclick = async () => {
   renderQueueBadge();
   if (navigator.onLine){ toast('📤 Đã lưu — đang gửi cuộn (' + rows.length + ' LSX)'); flushQueue(); }
   else { toast('📦 Chưa có mạng — đã lưu tạm trên máy, sẽ tự gửi khi có mạng'); }
+};
+
+// ---------- Nhập Phế ----------
+$('btnPhe').onclick = () => {
+  const go = () => { appMode = 'phe'; show('step6'); };
+  if (isAuthed) { go(); return; }
+  pendingAction = go;
+  $('pinInput').value = '';
+  $('pinModal').classList.add('show');
+  setTimeout(() => $('pinInput').focus(), 200);
+};
+// Chọn công đoạn phế
+document.querySelectorAll('[data-phe-mode]').forEach(b => b.onclick = () => {
+  sel.mode = b.dataset.pheMode; sel.cn=''; sel.may='';
+  updateCrumbs();
+  if (!masters) { toast('Chưa có danh sách. Bấm ⚙️ để kết nối & tải.'); openSettings(); return; }
+  renderPicker('cn');
+  show('step2');
+});
+$('pheBack1').onclick = () => { appMode = 'sx'; show('step1'); };
+
+function enterPheForm(){
+  $('pheCtx').innerHTML = '🗑️ <b>Nhập Phế</b> &nbsp;|&nbsp; <b>'+esc(sel.mode)+'</b> &nbsp;|&nbsp; 👷 <b>'+esc(sel.cn)+'</b> &nbsp;|&nbsp; ⚙️ <b>'+esc(sel.may)+'</b>';
+  $('pheTron').value = '';
+  $('pheMau').value = '';
+  show('step7');
+  setTimeout(() => $('pheTron').focus(), 200);
+}
+$('pheBack3').onclick = () => { renderPicker('cn'); show('step2'); };
+$('pheTron').addEventListener('keydown', e => { if (e.key==='Enter'){ e.preventDefault(); $('pheMau').focus(); } });
+$('pheMau').addEventListener('keydown', e => { if (e.key==='Enter'){ e.preventDefault(); $('btnPheSend').click(); } });
+
+$('btnPheSend').onclick = () => {
+  const tron = Number($('pheTron').value) || 0;
+  const mau = Number($('pheMau').value) || 0;
+  if (tron <= 0 && mau <= 0){ toast('Nhập ít nhất 1 loại phế'); return; }
+  const time = nowStr();
+  const row = {
+    time: time, loai: sel.mode, cn: sel.cn, may: sel.may,
+    pheTron: tron, pheMau: mau
+  };
+  queue.push({ ts: Date.now(), batchId: genId(), type: 'phe', rows: [row] });
+  saveQ();
+  toast('✅ Đã lưu phế: Trơn ' + tron + ' kg, Màu ' + mau + ' kg');
+  // Reset về step6 để nhập tiếp nếu cần
+  sel = { mode:'', cn:'', may:'' };
+  updateCrumbs();
+  appMode = 'sx';
+  show('step1');
+  renderQueueBadge();
+  if (navigator.onLine) flushQueue();
 };
 
 // ---------- PIN & Dashboard ----------
