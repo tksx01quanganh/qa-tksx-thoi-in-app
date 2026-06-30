@@ -65,9 +65,9 @@
   .dash-filter { display: flex; gap: 6px; margin-bottom: 10px; flex-wrap: wrap; }
   .dash-filter button { padding: 8px 14px; font-size: 13px; border-radius: 8px; background: #e5e7eb; color: #374151; }
   .dash-filter button.active { background: #0f766e; color: #fff; }
-  .dash-table { width: 100%; border-collapse: collapse; font-size: 12px; }
-  .dash-table th { background: #f0fdfa; color: #0f766e; padding: 8px 5px; position: sticky; top: 0; z-index: 1; }
-  .dash-table td { padding: 7px 5px; border-bottom: 1px solid #eef0f3; }
+  .dash-table { width: 100%; border-collapse: collapse; font-size: 15px; }
+  .dash-table th { background: #f0fdfa; color: #0f766e; padding: 10px 6px; position: sticky; top: 0; z-index: 1; }
+  .dash-table td { padding: 9px 6px; border-bottom: 1px solid #eef0f3; }
   .dash-table tr.warn { background: #fef3c7; }
   .dash-table .neg { color: #dc2626; font-weight: 700; }
   .dash-table .pos { color: #166534; }
@@ -78,8 +78,8 @@
   .tag-goc { background: #dcfce7; color: #166534; }
   .dash-summary { display: flex; gap: 8px; margin-bottom: 10px; flex-wrap: wrap; }
   .dash-summary .sbox { flex: 1; min-width: 80px; background: #f0fdfa; border: 1px solid #99f6e4; border-radius: 10px; padding: 8px; text-align: center; }
-  .dash-summary .sbox .snum { font-size: 20px; font-weight: 700; color: #0f766e; }
-  .dash-summary .sbox .slbl { font-size: 11px; color: #5a6473; }
+  .dash-summary .sbox .snum { font-size: 22px; font-weight: 700; color: #0f766e; }
+  .dash-summary .sbox .slbl { font-size: 13px; color: #5a6473; }
 </style>
 </head>
 <body>
@@ -99,6 +99,7 @@
   </div>
   <button class="b-dash full" id="btnDashboard" style="margin-top:12px">📊 Kiểm tra kết quả</button>
   <button class="b-phe full" id="btnPhe" style="margin-top:8px">🗑️ Nhập Phế</button>
+  <button class="b-go full" id="btnChuyen" style="margin-top:8px">📦 Chuyển cuộn sang Cắt</button>
 </div>
 
 <!-- BƯỚC 2: Công nhân -->
@@ -181,7 +182,7 @@
   <input class="search" id="dashSearch" placeholder="🔎 Tìm LSX..." autocomplete="off">
   <div class="dash-scroll">
     <table class="dash-table">
-      <thead><tr><th>LSX</th><th>KLYC</th><th>Tổng SX</th><th>Còn lại</th><th>SL</th><th>Loại</th></tr></thead>
+      <thead><tr><th>LSX</th><th>KLYC</th><th>Tổng SX</th><th>Còn lại</th><th>SL</th></tr></thead>
       <tbody id="dashBody"></tbody>
     </table>
   </div>
@@ -209,6 +210,46 @@
   <input class="fld" id="pheMau" placeholder="0" autocomplete="off" inputmode="decimal" enterkeyhint="done">
   <button class="b-send full" id="btnPheSend" style="margin-top:12px">📤 Gửi phế</button>
   <button class="b-back full" id="pheBack3" style="margin-top:8px">← Đổi CN/Máy</button>
+</div>
+
+<!-- BƯỚC 8: Chuyển cuộn sang Cắt -->
+<div class="card step hide" id="step8">
+  <p class="steptitle">📦 Chuyển cuộn sang Cắt</p>
+
+  <!-- Scan phase -->
+  <div id="chuyenScanPhase">
+    <div id="chuyenReader" style="width:100%;border-radius:12px;overflow:hidden;background:#000;min-height:60px"></div>
+    <div class="status" id="chuyenStatus">Bấm "Bắt đầu Scan" để bật camera</div>
+    <button class="b-go full" id="btnChuyenScan">▶ Bắt đầu Scan QR</button>
+
+    <div class="lsxbox hide" id="chuyenPendingBox" style="margin-top:10px"></div>
+    <button class="b-add full hide" id="btnChuyenAddMore">📷 Scan LSX khác (cuộn ghép)</button>
+
+    <label style="margin-top:10px">Hoặc nhập tay (mã LSX)</label>
+    <div class="row">
+      <input class="fld" id="chuyenManualFld" placeholder="VD: 26062725002" autocomplete="off" inputmode="text" enterkeyhint="done" style="margin-bottom:0">
+      <button class="b-manual" id="btnChuyenManual" style="padding:0 18px;width:auto">＋</button>
+    </div>
+
+    <div style="font-weight:600;margin:14px 0 8px" id="chuyenCount">Cuộn này: 0 LSX</div>
+    <table>
+      <thead><tr><th>#</th><th>LSX</th><th></th></tr></thead>
+      <tbody id="chuyenBody"></tbody>
+    </table>
+    <div class="empty" id="chuyenEmpty">Chưa quét QR nào</div>
+
+    <button class="b-send full" id="btnChuyenNext" style="margin-top:12px">→ Nhập khối lượng cuộn</button>
+    <button class="b-back full" id="btnChuyenBack" style="margin-top:8px">← Về trang chính</button>
+  </div>
+
+  <!-- Weight + confirm phase -->
+  <div id="chuyenWeightPhase" class="hide">
+    <div class="lsxbox" id="chuyenInfo"></div>
+    <label>Khối lượng cuộn thực tế (kg)</label>
+    <input class="fld" id="chuyenKLFld" placeholder="VD: 135" autocomplete="off" inputmode="decimal" enterkeyhint="done">
+    <button class="b-send full" id="btnChuyenSend" style="margin-top:12px">📤 Xác nhận chuyển cuộn</button>
+    <button class="b-back full" id="btnChuyenBackScan" style="margin-top:8px">← Quét tiếp</button>
+  </div>
 </div>
 
 <div class="toast" id="toast"></div>
@@ -241,13 +282,16 @@
 </div>
 
 <script>
-const URLKEY = 'tksx_url', MKEY = 'tksx_masters', QKEY = 'tksx_queue', PINKEY = 'tksx_pin', AUTHKEY = 'tksx_auth';
+const URLKEY = 'tksx_url', MKEY = 'tksx_masters', QKEY = 'tksx_queue', PINKEY = 'tksx_pin', PINCKEY = 'tksx_pin_chuyen';
 // Link Google Sheet gắn sẵn -> mọi điện thoại tự kết nối, chỉ cần mở 1 link Netlify
 const DEFAULT_URL = 'https://script.google.com/macros/s/AKfycbztgdaMXNFinyvZWXeO18tGHFFUKXW6V0XvvbWNR71L311WnsbVVWDreYSuLsdpZnrsiA/exec';
 let sheetUrl = localStorage.getItem(URLKEY) || DEFAULT_URL;
 let masters = JSON.parse(localStorage.getItem(MKEY) || 'null');
-let storedPIN = localStorage.getItem(PINKEY) || '';  // PIN lấy từ Sheet, cache trên máy
-let isAuthed = false;  // đã nhập đúng PIN trong phiên này chưa
+let storedPIN = localStorage.getItem(PINKEY) || '';  // PIN SX từ Sheet
+let storedPINChuyen = localStorage.getItem(PINCKEY) || '';  // PIN chuyển cuộn từ Sheet
+let isAuthed = false;  // đã nhập đúng PIN SX trong phiên này chưa
+let isAuthChuyen = false;  // đã nhập đúng PIN chuyển cuộn chưa
+let pinTarget = 'sx';  // 'sx' hoặc 'chuyen' — PIN modal đang check cho flow nào
 let sel = { mode: '', cn: '', may: '' };
 let qr = null, scanning = false, lastCode = '', lastT = 0;
 // Trạng thái cuộn đang quét
@@ -261,6 +305,12 @@ let dashData = [];       // dữ liệu Master từ Sheet
 let dashFilter = 'all';  // filter hiện tại
 let pendingAction = null; // hành động chờ sau khi nhập PIN
 let appMode = 'sx';      // 'sx' = sản xuất, 'phe' = nhập phế
+// Chuyển cuộn
+let chuyenBatch = [];    // [{lsx}] — danh sách LSX trong cuộn đang chuyển
+let qrChuyen = null;     // Html5Qrcode instance cho chuyển cuộn
+let chuyenScanning = false;
+let chuyenPaused = false;
+let chuyenLastCode = '', chuyenLastT = 0;
 // Hàng đợi gửi (lưu trên máy) — mất mạng vẫn giữ, có mạng tự gửi
 let queue = JSON.parse(localStorage.getItem(QKEY) || '[]');
 let flushing = false;
@@ -292,6 +342,7 @@ document.querySelectorAll('[data-mode]').forEach(b => b.onclick = () => {
   };
   if (isAuthed) { go(); return; }
   // Cần nhập PIN trước khi ghi nhận sản xuất
+  pinTarget = 'sx';
   pendingAction = go;
   $('pinInput').value = '';
   $('pinModal').classList.add('show');
@@ -650,6 +701,7 @@ $('btnConfirmSend').onclick = async () => {
 $('btnPhe').onclick = () => {
   const go = () => { appMode = 'phe'; show('step6'); };
   if (isAuthed) { go(); return; }
+  pinTarget = 'sx';
   pendingAction = go;
   $('pinInput').value = '';
   $('pinModal').classList.add('show');
@@ -708,12 +760,14 @@ $('pinInput').addEventListener('keydown', e => { if (e.key==='Enter'){ e.prevent
 function checkPIN(){
   const input = $('pinInput').value.trim();
   if (!input){ toast('Vui lòng nhập PIN'); return; }
-  if (!storedPIN) {
+  const targetPIN = pinTarget === 'chuyen' ? storedPINChuyen : storedPIN;
+  if (!targetPIN) {
     toast('⚠ Chưa có PIN. Bấm ⚙️ tải lại danh sách để lấy PIN từ Sheet.');
     return;
   }
-  if (input === storedPIN) {
-    isAuthed = true;
+  if (input === targetPIN) {
+    if (pinTarget === 'chuyen') isAuthChuyen = true;
+    else isAuthed = true;
     $('pinModal').classList.remove('show');
     if (pendingAction) { pendingAction(); pendingAction = null; }
   } else {
@@ -777,17 +831,12 @@ function renderDashboard(){
     const conLai = Number(r.conLai) || 0;
     const isWarn = conLai < 0;
     if (isWarn) tr.className = 'warn';
-    let loaiTag = '';
-    if (r.loaiBu === 'Nội bộ') loaiTag = '<span class="tag tag-nb">NB</span>';
-    else if (r.loaiBu === 'Khách hàng') loaiTag = '<span class="tag tag-kh">KH</span>';
-    else loaiTag = '<span class="tag tag-goc">Gốc</span>';
     tr.innerHTML =
       '<td>' + esc(r.lsx) + '</td>' +
       '<td>' + esc(r.klyc) + '</td>' +
       '<td>' + esc(r.tongSX) + '</td>' +
       '<td class="' + (conLai < 0 ? 'neg' : conLai > 0 ? 'pos' : '') + '">' + conLai + '</td>' +
-      '<td>' + esc(r.soLanSX) + '</td>' +
-      '<td>' + loaiTag + '</td>';
+      '<td>' + esc(r.soLanSX) + '</td>';
     tb.appendChild(tr);
   });
 }
@@ -827,8 +876,13 @@ function loadMasters(closeModal){
       storedPIN = '' + data.pin;
       localStorage.setItem(PINKEY, storedPIN);
     }
+    if (data.pinChuyen) {
+      storedPINChuyen = '' + data.pinChuyen;
+      localStorage.setItem(PINCKEY, storedPINChuyen);
+    }
     // Lưu masters (bỏ key pin ra)
     delete data.pin;
+    delete data.pinChuyen;
     masters = data;
     localStorage.setItem(MKEY, JSON.stringify(data));
     cleanup();
@@ -842,6 +896,176 @@ function loadMasters(closeModal){
   setTimeout(function(){ if(!done){ cleanup(); toast('⚠ Quá thời gian tải DS. Kiểm tra link & mạng.'); } }, 12000);
   function cleanup(){ try{ delete window[cbName]; }catch(e){ window[cbName]=undefined; } if (s.parentNode) s.parentNode.removeChild(s); }
 }
+
+// ---------- Chuyển cuộn ----------
+$('btnChuyen').onclick = () => {
+  const go = () => { enterChuyenCuon(); };
+  if (isAuthChuyen) { go(); return; }
+  pinTarget = 'chuyen';
+  pendingAction = go;
+  $('pinInput').value = '';
+  $('pinModal').classList.add('show');
+  setTimeout(() => $('pinInput').focus(), 200);
+};
+
+function enterChuyenCuon(){
+  chuyenBatch = []; chuyenPaused = false; chuyenLastCode = '';
+  $('chuyenPendingBox').classList.add('hide');
+  $('btnChuyenAddMore').classList.add('hide');
+  renderChuyenBatch();
+  showChuyenPhase('scan');
+  $('crumbs').innerHTML = '📦 <b>Chuyển cuộn sang Cắt</b>';
+  show('step8');
+}
+
+function showChuyenPhase(p){
+  $('chuyenScanPhase').classList.toggle('hide', p!=='scan');
+  $('chuyenWeightPhase').classList.toggle('hide', p!=='weight');
+}
+
+function renderChuyenBatch(){
+  const has = chuyenBatch.length > 0;
+  $('chuyenCount').textContent = 'Cuộn này: ' + chuyenBatch.length + ' LSX';
+  $('chuyenEmpty').style.display = has ? 'none' : 'block';
+  const tb = $('chuyenBody'); tb.innerHTML = '';
+  chuyenBatch.forEach((b, i) => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = '<td>'+(i+1)+'</td><td>'+esc(b.lsx)+'</td><td class="del" data-i="'+i+'">✕</td>';
+    tb.appendChild(tr);
+  });
+  tb.querySelectorAll('.del').forEach(el => el.onclick = e => {
+    chuyenBatch.splice(+e.target.dataset.i, 1);
+    chuyenLastCode = '';
+    renderChuyenBatch();
+  });
+}
+
+// Scan cho chuyển cuộn
+$('btnChuyenScan').onclick = () => {
+  initAudio();
+  if (chuyenScanning) stopChuyenScan();
+  else startChuyenScan();
+};
+
+function setChuyenScanBtn(mode){
+  const b = $('btnChuyenScan');
+  if (mode==='live'){ b.textContent='⏹ Dừng camera'; b.style.background='#dc2626'; }
+  else { b.textContent='▶ Bắt đầu Scan QR'; b.style.background=''; }
+}
+
+function startChuyenScan(){
+  if (!qrChuyen) qrChuyen = new Html5Qrcode('chuyenReader');
+  qrChuyen.start({ facingMode:'environment' }, { fps:10, qrbox:{width:220,height:220} },
+    txt => {
+      if (chuyenPaused) return;
+      const t = Date.now();
+      if (txt===chuyenLastCode && t-chuyenLastT<1500) return;
+      chuyenLastCode = txt; chuyenLastT = t;
+      onChuyenScan(txt);
+    }, ()=>{}
+  ).then(()=>{ chuyenScanning=true; chuyenPaused=false; setChuyenScanBtn('live'); $('chuyenStatus').textContent='Đang quét... đưa QR vào khung'; })
+   .catch(e=>$('chuyenStatus').textContent='⚠ Không mở được camera. '+e);
+}
+
+function onChuyenScan(txt){
+  const lsx = parseLSXFromQR(txt);
+  if (!lsx){
+    if (navigator.vibrate) navigator.vibrate([60,40,60]);
+    toast('⚠ QR sai format: "'+txt+'"');
+    $('chuyenStatus').textContent = '⚠ Bỏ qua QR sai format';
+    return;
+  }
+  if (chuyenBatch.some(b => b.lsx === lsx)){
+    if (navigator.vibrate) navigator.vibrate([60,40,60]);
+    toast('LSX "'+lsx+'" đã có trong cuộn này');
+    $('chuyenStatus').textContent = 'Đã có LSX ' + lsx + ' — bỏ qua';
+    return;
+  }
+  chuyenBatch.push({ lsx: lsx });
+  renderChuyenBatch();
+  try { qrChuyen.pause(true); } catch(e){}
+  chuyenPaused = true;
+  beep(); flashOK(); if (navigator.vibrate) navigator.vibrate(110);
+  $('chuyenPendingBox').textContent = '✓ Đã thêm: ' + lsx;
+  $('chuyenPendingBox').classList.remove('hide');
+  $('btnChuyenAddMore').classList.remove('hide');
+  $('chuyenStatus').textContent = 'Đã thêm. Bấm "Scan LSX khác" nếu cuộn ghép.';
+}
+
+// Parse LSX từ QR (format: LSX/KL hoặc chỉ LSX)
+function parseLSXFromQR(txt){
+  txt = (''+(txt==null?'':txt)).trim();
+  if (!txt) return null;
+  const parts = txt.split('/');
+  const lsx = parts[0].trim();
+  return lsx || null;
+}
+
+$('btnChuyenAddMore').onclick = () => {
+  $('chuyenPendingBox').classList.add('hide');
+  $('btnChuyenAddMore').classList.add('hide');
+  chuyenLastCode = '';
+  if (qrChuyen && chuyenScanning){ try { qrChuyen.resume(); } catch(e){} chuyenPaused=false; }
+  $('chuyenStatus').textContent = 'Đang quét... đưa QR tiếp theo vào khung';
+};
+
+function stopChuyenScan(){
+  if (qrChuyen && chuyenScanning) return qrChuyen.stop().then(()=>{
+    chuyenScanning=false; chuyenPaused=false;
+    $('chuyenPendingBox').classList.add('hide'); $('btnChuyenAddMore').classList.add('hide');
+    setChuyenScanBtn('idle'); $('chuyenStatus').textContent='Đã dừng camera';
+  });
+  return Promise.resolve();
+}
+
+// Nhập tay cho chuyển cuộn
+$('btnChuyenManual').onclick = () => {
+  const v = $('chuyenManualFld').value.trim();
+  if (!v){ $('chuyenManualFld').focus(); return; }
+  const lsx = parseLSXFromQR(v);
+  if (!lsx){ toast('⚠ Nhập mã LSX hợp lệ'); return; }
+  if (chuyenBatch.some(b => b.lsx === lsx)){ toast('LSX "'+lsx+'" đã có'); return; }
+  chuyenBatch.push({ lsx: lsx });
+  renderChuyenBatch();
+  $('chuyenManualFld').value = '';
+  $('chuyenManualFld').focus();
+  toast('✓ Đã thêm ' + lsx);
+};
+$('chuyenManualFld').addEventListener('keydown', e => { if(e.key==='Enter'){ e.preventDefault(); $('btnChuyenManual').click(); } });
+
+// Chuyển sang nhập KL
+$('btnChuyenNext').onclick = async () => {
+  if (!chuyenBatch.length){ toast('Chưa quét QR nào'); return; }
+  await stopChuyenScan();
+  $('chuyenInfo').textContent = '📦 ' + chuyenBatch.length + ' LSX: ' + chuyenBatch.map(b=>b.lsx).join(', ');
+  $('chuyenKLFld').value = '';
+  showChuyenPhase('weight');
+  setTimeout(()=>$('chuyenKLFld').focus(), 200);
+};
+
+// Xác nhận chuyển cuộn
+$('btnChuyenSend').onclick = async () => {
+  const raw = $('chuyenKLFld').value.trim();
+  const kl = Number(raw);
+  if (!raw || !isFinite(kl) || kl <= 0){ toast('Nhập khối lượng hợp lệ'); $('chuyenKLFld').focus(); return; }
+  const time = nowStr();
+  const lsxList = chuyenBatch.map(b => b.lsx).join(', ');
+  const rows = [{ time: time, lsx: lsxList, klcuon: kl }];
+  queue.push({ ts: Date.now(), batchId: genId(), type: 'chuyencuon', rows: rows });
+  saveQ();
+  try { await stopChuyenScan(); } catch(e){}
+  chuyenBatch = []; chuyenLastCode = '';
+  renderChuyenBatch();
+  showChuyenPhase('scan');
+  $('crumbs').innerHTML = '';
+  show('step1');
+  renderQueueBadge();
+  if (navigator.onLine){ toast('📤 Đã lưu — đang gửi chuyển cuộn (' + lsxList + ', ' + kl + ' kg)'); flushQueue(); }
+  else { toast('📦 Đã lưu tạm, sẽ tự gửi khi có mạng'); }
+};
+
+$('btnChuyenBack').onclick = async () => { await stopChuyenScan(); chuyenBatch=[]; renderChuyenBatch(); $('crumbs').innerHTML=''; show('step1'); };
+$('btnChuyenBackScan').onclick = () => { showChuyenPhase('scan'); $('chuyenStatus').textContent='Quét tiếp hoặc bấm → Nhập khối lượng.'; };
 
 // ---------- Tự gửi lại khi có mạng ----------
 window.addEventListener('online', () => { toast('🌐 Đã có mạng — đang gửi dữ liệu chờ'); flushQueue(); });
