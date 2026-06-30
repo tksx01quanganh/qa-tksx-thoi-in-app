@@ -193,7 +193,7 @@
 <div class="modal" id="pinModal">
   <div class="box">
     <h3>🔒 Nhập mã PIN</h3>
-    <p>Nhập PIN để truy cập kiểm tra kết quả sản xuất.</p>
+    <p>Nhập PIN để ghi nhận sản xuất. Liên hệ quản lý nếu chưa có PIN.</p>
     <input class="fld" id="pinInput" placeholder="Nhập PIN..." autocomplete="off" inputmode="numeric" maxlength="10">
     <div class="row">
       <button class="b-back full" id="pinCancel">Đóng</button>
@@ -235,6 +235,7 @@ let sentRolls = 0;       // số cuộn đã gửi trong phiên
 // Dashboard data
 let dashData = [];       // dữ liệu Master từ Sheet
 let dashFilter = 'all';  // filter hiện tại
+let pendingAction = null; // hành động chờ sau khi nhập PIN
 // Hàng đợi gửi (lưu trên máy) — mất mạng vẫn giữ, có mạng tự gửi
 let queue = JSON.parse(localStorage.getItem(QKEY) || '[]');
 let flushing = false;
@@ -257,11 +258,19 @@ function updateCrumbs(){
 
 // ---------- Bước 1 ----------
 document.querySelectorAll('[data-mode]').forEach(b => b.onclick = () => {
-  sel.mode = b.dataset.mode; sel.cn=''; sel.may='';
-  updateCrumbs();
-  if (!masters) { toast('Chưa có danh sách. Bấm ⚙️ để kết nối & tải.'); openSettings(); return; }
-  renderPicker('cn');
-  show('step2');
+  const go = () => {
+    sel.mode = b.dataset.mode; sel.cn=''; sel.may='';
+    updateCrumbs();
+    if (!masters) { toast('Chưa có danh sách. Bấm ⚙️ để kết nối & tải.'); openSettings(); return; }
+    renderPicker('cn');
+    show('step2');
+  };
+  if (isAuthed) { go(); return; }
+  // Cần nhập PIN trước khi ghi nhận sản xuất
+  pendingAction = go;
+  $('pinInput').value = '';
+  $('pinModal').classList.add('show');
+  setTimeout(() => $('pinInput').focus(), 200);
 });
 
 // ---------- Picker CN / Máy ----------
@@ -610,13 +619,7 @@ $('btnConfirmSend').onclick = async () => {
 
 // ---------- PIN & Dashboard ----------
 $('btnDashboard').onclick = () => {
-  if (isAuthed) {
-    openDashboard();
-  } else {
-    $('pinInput').value = '';
-    $('pinModal').classList.add('show');
-    setTimeout(() => $('pinInput').focus(), 200);
-  }
+  openDashboard();
 };
 $('pinCancel').onclick = () => $('pinModal').classList.remove('show');
 $('pinOk').onclick = checkPIN;
@@ -632,7 +635,7 @@ function checkPIN(){
   if (input === storedPIN) {
     isAuthed = true;
     $('pinModal').classList.remove('show');
-    openDashboard();
+    if (pendingAction) { pendingAction(); pendingAction = null; }
   } else {
     toast('❌ Sai PIN');
     $('pinInput').value = '';
