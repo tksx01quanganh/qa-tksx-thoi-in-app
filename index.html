@@ -1,0 +1,777 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#0f766e">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-192.png">
+<title>TKSX</title>
+<script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+<style>
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { margin: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #eef1f5; color: #15181d; max-width: 600px; margin: 0 auto; padding: 10px 10px 90px; }
+  header { display: flex; align-items: center; justify-content: space-between; margin: 4px 2px 10px; }
+  header h1 { font-size: 18px; margin: 0; color: #0f766e; }
+  .gear { background: #fff; border: 1px solid #d8dde6; border-radius: 10px; width: 40px; height: 40px; font-size: 18px; cursor: pointer; }
+  .card { background: #fff; border-radius: 14px; padding: 16px; margin-bottom: 12px; box-shadow: 0 1px 4px rgba(0,0,0,.07); }
+  button { border: none; border-radius: 12px; font-size: 16px; font-weight: 600; cursor: pointer; color: #fff; transition: transform .05s; }
+  button:active { transform: scale(.97); }
+  .full { width: 100%; padding: 15px; }
+  .row { display: flex; gap: 10px; }
+  .crumbs { font-size: 13px; color: #5a6473; margin: 0 2px 10px; min-height: 18px; }
+  .crumbs b { color: #0f766e; }
+  .steptitle { font-size: 16px; font-weight: 700; margin: 0 0 14px; }
+  .big { padding: 26px 10px; font-size: 22px; }
+  .b-thoi { background: #0ea5e9; }
+  .b-in { background: #f59e0b; }
+  .b-back { background: #6b7280; }
+  .b-go { background: #0f766e; }
+  .b-add { background: #059669; }
+  .b-send { background: #7c3aed; }
+  .b-manual { background: #0891b2; }
+  .b-dash { background: #6366f1; }
+  .search { width: 100%; padding: 12px; font-size: 16px; border: 1px solid #cfd6e0; border-radius: 10px; margin-bottom: 10px; }
+  .list { max-height: 52vh; overflow-y: auto; }
+  .item { width: 100%; text-align: left; background: #f3f6fa; color: #15181d; border: 1px solid #e3e8ef; border-radius: 10px; padding: 13px; margin-bottom: 8px; font-weight: 600; }
+  .item .code { color: #0f766e; font-weight: 700; margin-right: 6px; }
+  #reader { width: 100%; border-radius: 12px; overflow: hidden; background: #000; min-height: 60px; }
+  .status { text-align: center; font-size: 13px; color: #5a6473; margin: 10px 0 4px; min-height: 18px; }
+  label { display: block; font-size: 13px; color: #5a6473; margin: 8px 0 4px; }
+  input.fld { width: 100%; padding: 13px; font-size: 16px; border: 1px solid #cfd6e0; border-radius: 10px; margin-bottom: 10px; }
+  .lsxbox { background: #ecfeff; border: 1px solid #a5f3fc; border-radius: 10px; padding: 10px; font-weight: 700; color: #0e7490; word-break: break-all; margin-bottom: 8px; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th, td { padding: 8px 6px; border-bottom: 1px solid #eef0f3; text-align: left; word-break: break-all; vertical-align: top; }
+  th { background: #f7f9fc; font-weight: 600; color: #5a6473; }
+  td.del { color: #dc2626; text-align: center; cursor: pointer; font-weight: 700; width: 26px; }
+  .empty { text-align: center; color: #98a2b3; padding: 12px; font-size: 14px; }
+  .sendbar { position: fixed; left: 0; right: 0; bottom: 0; max-width: 600px; margin: 0 auto; padding: 10px; background: linear-gradient(transparent, #eef1f5 24%); }
+  .toast { position: fixed; left: 50%; bottom: 84px; transform: translateX(-50%); background: #15181d; color: #fff; padding: 12px 18px; border-radius: 24px; font-size: 14px; opacity: 0; transition: opacity .25s; pointer-events: none; z-index: 99; max-width: 92%; text-align: center; }
+  .toast.show { opacity: .96; }
+  .modal { position: fixed; inset: 0; background: rgba(0,0,0,.5); display: none; align-items: center; justify-content: center; padding: 16px; z-index: 100; }
+  .modal.show { display: flex; }
+  .modal .box { background: #fff; border-radius: 16px; padding: 18px; width: 100%; max-width: 460px; }
+  .modal h3 { margin: 0 0 10px; font-size: 17px; }
+  .modal p { font-size: 13px; color: #5a6473; margin: 0 0 12px; }
+  .hide { display: none; }
+  .ctx { background: #f0fdfa; border: 1px solid #99f6e4; border-radius: 10px; padding: 10px 12px; font-size: 13px; margin-bottom: 12px; line-height: 1.7; }
+  .ctx b { color: #0f766e; }
+  .linkbtn { background: none; color: #0f766e; text-decoration: underline; font-size: 13px; padding: 0; width: auto; font-weight: 600; }
+  .qbar { background: #fef3c7; border: 1px solid #fcd34d; color: #92400e; border-radius: 10px; padding: 9px 12px; font-size: 13px; font-weight: 600; margin: 0 2px 10px; }
+  .qbar.ok { background: #dcfce7; border-color: #86efac; color: #166534; }
+  /* Dashboard styles */
+  .dash-filter { display: flex; gap: 6px; margin-bottom: 10px; flex-wrap: wrap; }
+  .dash-filter button { padding: 8px 14px; font-size: 13px; border-radius: 8px; background: #e5e7eb; color: #374151; }
+  .dash-filter button.active { background: #0f766e; color: #fff; }
+  .dash-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  .dash-table th { background: #f0fdfa; color: #0f766e; padding: 8px 5px; position: sticky; top: 0; z-index: 1; }
+  .dash-table td { padding: 7px 5px; border-bottom: 1px solid #eef0f3; }
+  .dash-table tr.warn { background: #fef3c7; }
+  .dash-table .neg { color: #dc2626; font-weight: 700; }
+  .dash-table .pos { color: #166534; }
+  .dash-scroll { max-height: 65vh; overflow-y: auto; }
+  .tag { display: inline-block; font-size: 11px; padding: 2px 7px; border-radius: 6px; font-weight: 600; }
+  .tag-nb { background: #dbeafe; color: #1e40af; }
+  .tag-kh { background: #fce7f3; color: #9d174d; }
+  .tag-goc { background: #dcfce7; color: #166534; }
+  .dash-summary { display: flex; gap: 8px; margin-bottom: 10px; flex-wrap: wrap; }
+  .dash-summary .sbox { flex: 1; min-width: 80px; background: #f0fdfa; border: 1px solid #99f6e4; border-radius: 10px; padding: 8px; text-align: center; }
+  .dash-summary .sbox .snum { font-size: 20px; font-weight: 700; color: #0f766e; }
+  .dash-summary .sbox .slbl { font-size: 11px; color: #5a6473; }
+</style>
+</head>
+<body>
+<header>
+  <h1>🏭 Ghi nhận sản xuất</h1>
+  <button class="gear" id="gear" title="Cài đặt">⚙️</button>
+</header>
+<div class="crumbs" id="crumbs"></div>
+<div class="qbar hide" id="queueBar"></div>
+
+<!-- BƯỚC 1: Thổi / In -->
+<div class="card step hide" id="step1">
+  <p class="steptitle">Bước 1 — Chọn công đoạn</p>
+  <div class="row">
+    <button class="b-thoi big full" data-mode="Thổi">💨<br>Thổi</button>
+    <button class="b-in big full" data-mode="In">🖨️<br>In</button>
+  </div>
+  <button class="b-dash full" id="btnDashboard" style="margin-top:12px">📊 Kiểm tra kết quả</button>
+</div>
+
+<!-- BƯỚC 2: Công nhân -->
+<div class="card step hide" id="step2">
+  <p class="steptitle">Bước 2 — Chọn công nhân</p>
+  <input class="search" id="cnSearch" placeholder="🔎 Tìm mã hoặc tên..." autocomplete="off">
+  <div class="list" id="cnList"></div>
+  <button class="b-back full" id="cnBack" style="margin-top:8px">← Quay lại</button>
+</div>
+
+<!-- BƯỚC 3: Máy -->
+<div class="card step hide" id="step3">
+  <p class="steptitle">Bước 3 — Chọn máy</p>
+  <input class="search" id="mySearch" placeholder="🔎 Tìm mã hoặc tên..." autocomplete="off">
+  <div class="list" id="myList"></div>
+  <button class="b-back full" id="myBack" style="margin-top:8px">← Quay lại</button>
+</div>
+
+<!-- BƯỚC 4: Quét nhiều QR / cuộn -->
+<div class="card step hide" id="step4">
+  <div class="ctx" id="ctx"></div>
+
+  <!-- PHA A: Quét QR vào cuộn -->
+  <div id="scanPhase">
+    <div id="reader"></div>
+    <div class="status" id="status">Bấm "Bắt đầu Scan" để bật camera</div>
+    <button class="b-go full" id="btnScan">▶ Bắt đầu Scan QR</button>
+
+    <div class="lsxbox hide" id="pendingBox" style="margin-top:10px"></div>
+    <button class="b-add full hide" id="btnAddPending">📷 Scan LSX khác</button>
+
+    <label style="margin-top:10px">Hoặc nhập tay (LSX/Khối lượng)</label>
+    <div class="row">
+      <input class="fld" id="manualFld" placeholder="VD: LSX001/250" autocomplete="off" inputmode="text" enterkeyhint="done" style="margin-bottom:0">
+      <button class="b-manual" id="btnManual" style="padding:0 18px;width:auto">＋</button>
+    </div>
+
+    <div style="font-weight:600;margin:14px 0 8px" id="batchCount">Cuộn này: 0 QR</div>
+    <table>
+      <thead><tr><th>#</th><th>LSX</th><th>KL yêu cầu</th><th></th></tr></thead>
+      <tbody id="batchBody"></tbody>
+    </table>
+    <div class="empty" id="batchEmpty">Chưa quét QR nào cho cuộn này</div>
+
+    <button class="b-send full" id="btnStopScan" style="margin-top:12px">⏹ Dừng scan → nhập khối lượng cuộn</button>
+    <button class="b-back full" id="step4Back" style="margin-top:8px">← Đổi CN/Máy</button>
+  </div>
+
+  <!-- PHA B: Nhập khối lượng cuộn -->
+  <div id="weightPhase" class="hide">
+    <div class="lsxbox" id="methodBox"></div>
+    <label>Khối lượng cuộn thực tế (kg)</label>
+    <input class="fld" id="klcuonFld" placeholder="VD: 520" autocomplete="off" inputmode="decimal" enterkeyhint="done">
+    <button class="b-go full" id="btnCalc">Xem bảng phân bổ →</button>
+    <button class="b-back full" id="btnBackToScan" style="margin-top:8px">← Quét tiếp</button>
+  </div>
+
+  <!-- PHA C: Xem bảng phân bổ & gửi -->
+  <div id="previewPhase" class="hide">
+    <div class="lsxbox" id="previewInfo"></div>
+    <table>
+      <thead><tr><th>LSX</th><th>Yêu cầu</th><th>Phân bổ (KQ SX)</th></tr></thead>
+      <tbody id="previewBody"></tbody>
+    </table>
+    <div style="font-weight:700;margin-top:10px" id="previewSum"></div>
+    <button class="b-send full" id="btnConfirmSend" style="margin-top:12px">📤 Xác nhận & Gửi cuộn này</button>
+    <button class="b-back full" id="btnBackToWeight" style="margin-top:8px">← Sửa khối lượng</button>
+  </div>
+</div>
+
+<!-- BƯỚC 5: Dashboard kiểm tra kết quả -->
+<div class="card step hide" id="step5">
+  <p class="steptitle">📊 Kiểm tra kết quả sản xuất</p>
+  <div class="dash-summary" id="dashSummary"></div>
+  <div class="dash-filter" id="dashFilter">
+    <button class="active" data-f="all">Tất cả</button>
+    <button data-f="Thổi">💨 Thổi</button>
+    <button data-f="In">🖨️ In</button>
+  </div>
+  <input class="search" id="dashSearch" placeholder="🔎 Tìm LSX..." autocomplete="off">
+  <div class="dash-scroll">
+    <table class="dash-table">
+      <thead><tr><th>LSX</th><th>KLYC</th><th>Tổng SX</th><th>Còn lại</th><th>SL</th><th>Loại</th></tr></thead>
+      <tbody id="dashBody"></tbody>
+    </table>
+  </div>
+  <div class="empty hide" id="dashEmpty">Chưa có dữ liệu Master</div>
+  <button class="b-back full" id="dashBack" style="margin-top:12px">← Về trang chính</button>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<!-- Modal PIN -->
+<div class="modal" id="pinModal">
+  <div class="box">
+    <h3>🔒 Nhập mã PIN</h3>
+    <p>Nhập PIN để truy cập kiểm tra kết quả sản xuất.</p>
+    <input class="fld" id="pinInput" placeholder="Nhập PIN..." autocomplete="off" inputmode="numeric" maxlength="10">
+    <div class="row">
+      <button class="b-back full" id="pinCancel">Đóng</button>
+      <button class="b-go full" id="pinOk">Xác nhận</button>
+    </div>
+  </div>
+</div>
+
+<!-- Cài đặt -->
+<div class="modal" id="modal">
+  <div class="box">
+    <h3>⚙️ Kết nối Google Sheet</h3>
+    <p>Dán link "Web app" (/exec) của Apps Script. App sẽ tải danh sách CN/Máy và gửi kết quả vào sheet này.</p>
+    <input class="fld" id="urlInput" placeholder="https://script.google.com/macros/s/.../exec" autocomplete="off">
+    <div class="row">
+      <button class="b-back full" id="btnCancel">Đóng</button>
+      <button class="b-add full" id="btnSaveUrl">Lưu &amp; tải DS</button>
+    </div>
+    <button class="linkbtn" id="btnReload" style="margin-top:12px">🔄 Tải lại danh sách CN/Máy</button>
+  </div>
+</div>
+
+<script>
+const URLKEY = 'tksx_url', MKEY = 'tksx_masters', QKEY = 'tksx_queue', PINKEY = 'tksx_pin', AUTHKEY = 'tksx_auth';
+// Link Google Sheet gắn sẵn -> mọi điện thoại tự kết nối, chỉ cần mở 1 link Netlify
+const DEFAULT_URL = 'https://script.google.com/macros/s/AKfycbztgdaMXNFinyvZWXeO18tGHFFUKXW6V0XvvbWNR71L311WnsbVVWDreYSuLsdpZnrsiA/exec';
+let sheetUrl = localStorage.getItem(URLKEY) || DEFAULT_URL;
+let masters = JSON.parse(localStorage.getItem(MKEY) || 'null');
+let storedPIN = localStorage.getItem(PINKEY) || '';  // PIN lấy từ Sheet, cache trên máy
+let isAuthed = false;  // đã nhập đúng PIN trong phiên này chưa
+let sel = { mode: '', cn: '', may: '' };
+let qr = null, scanning = false, lastCode = '', lastT = 0;
+// Trạng thái cuộn đang quét
+let batch = [];          // [{data, lsx, klyc}]
+let curMethod = '';      // 'GỘP' | 'ĐƠN'
+let curKlcuon = 0;       // khối lượng cuộn vừa nhập
+let curAlloc = [];       // mảng kết quả phân bổ theo từng dòng batch
+let sentRolls = 0;       // số cuộn đã gửi trong phiên
+// Dashboard data
+let dashData = [];       // dữ liệu Master từ Sheet
+let dashFilter = 'all';  // filter hiện tại
+// Hàng đợi gửi (lưu trên máy) — mất mạng vẫn giữ, có mạng tự gửi
+let queue = JSON.parse(localStorage.getItem(QKEY) || '[]');
+let flushing = false;
+
+const $ = id => document.getElementById(id);
+const esc = s => ('' + (s==null?'':s)).replace(/[&<>]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+const saveQ = () => localStorage.setItem(QKEY, JSON.stringify(queue));
+const genId = () => Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 8);
+function toast(m){ const t=$('toast'); t.textContent=m; t.classList.add('show'); clearTimeout(t._t); t._t=setTimeout(()=>t.classList.remove('show'),2400); }
+function nowStr(){ const d=new Date(),p=n=>String(n).padStart(2,'0'); return `${p(d.getDate())}/${p(d.getMonth()+1)}/${d.getFullYear()} ${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`; }
+
+function show(id){ document.querySelectorAll('.step').forEach(e=>e.classList.add('hide')); $(id).classList.remove('hide'); }
+function updateCrumbs(){
+  let s = '';
+  if (sel.mode) s += 'Công đoạn: <b>' + sel.mode + '</b>';
+  if (sel.cn) s += ' · CN: <b>' + esc(sel.cn) + '</b>';
+  if (sel.may) s += ' · Máy: <b>' + esc(sel.may) + '</b>';
+  $('crumbs').innerHTML = s;
+}
+
+// ---------- Bước 1 ----------
+document.querySelectorAll('[data-mode]').forEach(b => b.onclick = () => {
+  sel.mode = b.dataset.mode; sel.cn=''; sel.may='';
+  updateCrumbs();
+  if (!masters) { toast('Chưa có danh sách. Bấm ⚙️ để kết nối & tải.'); openSettings(); return; }
+  renderPicker('cn');
+  show('step2');
+});
+
+// ---------- Picker CN / Máy ----------
+function listFor(kind){
+  const m = sel.mode === 'Thổi'
+    ? (kind==='cn' ? masters.cn_thoi : masters.may_thoi)
+    : (kind==='cn' ? masters.cn_in   : masters.may_in);
+  return m || [];
+}
+function renderPicker(kind){
+  const data = listFor(kind);
+  const listEl = kind==='cn' ? $('cnList') : $('myList');
+  const searchEl = kind==='cn' ? $('cnSearch') : $('mySearch');
+  const draw = (q) => {
+    q = (q||'').toLowerCase().trim();
+    listEl.innerHTML = '';
+    const filtered = data.filter(x => !q || (x.code+' '+x.name).toLowerCase().indexOf(q)!==-1);
+    if (!filtered.length){ listEl.innerHTML = '<div class="empty">Không có dữ liệu. Kiểm tra sheet master hoặc bấm ⚙️ tải lại.</div>'; return; }
+    filtered.forEach(x => {
+      const b = document.createElement('button');
+      b.className = 'item';
+      const label = (x.code ? '<span class="code">'+esc(x.code)+'</span>' : '') + esc(x.name);
+      b.innerHTML = label;
+      const stored = (x.code ? x.code + ' - ' : '') + x.name;
+      b.onclick = () => pick(kind, stored);
+      listEl.appendChild(b);
+    });
+  };
+  searchEl.value = '';
+  searchEl.oninput = () => draw(searchEl.value);
+  draw('');
+}
+function pick(kind, value){
+  if (kind==='cn'){ sel.cn = value; updateCrumbs(); renderPicker('may'); show('step3'); }
+  else { sel.may = value; updateCrumbs(); enterStep4(); }
+}
+$('cnBack').onclick = () => show('step1');
+$('myBack').onclick = () => { renderPicker('cn'); show('step2'); };
+
+// ---------- Bước 4 ----------
+function showPhase(p){
+  $('scanPhase').classList.toggle('hide', p!=='scan');
+  $('weightPhase').classList.toggle('hide', p!=='weight');
+  $('previewPhase').classList.toggle('hide', p!=='preview');
+}
+function ctxText(){
+  let s = '💨🖨️ <b>'+sel.mode+'</b> &nbsp;|&nbsp; 👷 <b>'+esc(sel.cn)+'</b> &nbsp;|&nbsp; ⚙️ <b>'+esc(sel.may)+'</b>';
+  if (sentRolls) s += ' &nbsp;|&nbsp; ✅ Đã gửi <b>'+sentRolls+'</b> cuộn';
+  return s;
+}
+function enterStep4(){
+  batch = []; curMethod=''; curKlcuon=0; curAlloc=[]; pendingQR=null; paused=false;
+  $('pendingBox').classList.add('hide'); $('btnAddPending').classList.add('hide');
+  $('ctx').innerHTML = ctxText();
+  renderBatch();
+  showPhase('scan');
+  show('step4');
+}
+$('step4Back').onclick = () => { stopScan(); batch=[]; renderBatch(); renderPicker('cn'); show('step2'); };
+
+// --- Tiếng bíp bằng file WAV tạo sẵn (ổn định trên Android & iPhone) ---
+let beepAudio = null;
+function makeBeepURL(freq, ms, vol){
+  const sr=44100, n=Math.floor(sr*ms/1000), buf=new ArrayBuffer(44+n*2), dv=new DataView(buf);
+  const ws=(o,s)=>{ for(let i=0;i<s.length;i++) dv.setUint8(o+i, s.charCodeAt(i)); };
+  ws(0,'RIFF'); dv.setUint32(4,36+n*2,true); ws(8,'WAVE'); ws(12,'fmt ');
+  dv.setUint32(16,16,true); dv.setUint16(20,1,true); dv.setUint16(22,1,true);
+  dv.setUint32(24,sr,true); dv.setUint32(28,sr*2,true); dv.setUint16(32,2,true); dv.setUint16(34,16,true);
+  ws(36,'data'); dv.setUint32(40,n*2,true);
+  for(let i=0;i<n;i++){
+    const a=Math.min(1, i/(sr*0.004), (n-i)/(sr*0.03));
+    dv.setInt16(44+i*2, Math.sin(2*Math.PI*freq*i/sr)*vol*a*32767, true);
+  }
+  return URL.createObjectURL(new Blob([buf],{type:'audio/wav'}));
+}
+function initAudio(){
+  try {
+    if (!beepAudio){ beepAudio = new Audio(makeBeepURL(880,200,0.9)); beepAudio.preload='auto'; }
+    beepAudio.muted = true;
+    const pr = beepAudio.play();
+    if (pr && pr.then) pr.then(()=>{ beepAudio.pause(); beepAudio.currentTime=0; beepAudio.muted=false; }).catch(()=>{ beepAudio.muted=false; });
+    else beepAudio.muted=false;
+  } catch(e){}
+}
+function beep(){
+  try { if (beepAudio){ beepAudio.currentTime=0; const pr=beepAudio.play(); if(pr&&pr.catch) pr.catch(()=>{}); } } catch(e){}
+}
+function flashOK(){
+  let f = document.getElementById('okFlash');
+  if (!f){
+    f = document.createElement('div'); f.id = 'okFlash';
+    f.style.cssText = 'position:fixed;inset:0;background:#16a34a;opacity:0;pointer-events:none;z-index:9999;transition:opacity .12s';
+    document.body.appendChild(f);
+  }
+  f.style.opacity = '0.55';
+  setTimeout(()=>{ f.style.opacity = '0'; }, 140);
+}
+
+let paused = false;
+let pendingQR = null;
+$('btnScan').onclick = () => {
+  initAudio();
+  if (scanning) stopScan();
+  else startScan();
+};
+function setScanBtn(mode){
+  const b = $('btnScan');
+  if (mode==='live'){ b.textContent='⏹ Dừng camera'; b.style.background='#dc2626'; }
+  else { b.textContent='▶ Bắt đầu Scan QR'; b.style.background=''; }
+}
+function startScan(){
+  if (!qr) qr = new Html5Qrcode('reader');
+  qr.start({ facingMode:'environment' }, { fps:10, qrbox:{width:220,height:220} },
+    txt => {
+      if (paused) return;
+      const t = Date.now();
+      if (txt===lastCode && t-lastT<1500) return;
+      lastCode = txt; lastT = t;
+      onScanCatch(txt);
+    }, ()=>{}
+  ).then(()=>{ scanning=true; paused=false; setScanBtn('live'); $('status').textContent='Đang quét... đưa QR (LSX/Khối lượng) vào khung'; })
+   .catch(e=>$('status').textContent='⚠ Không mở được camera (cần HTTPS). '+e);
+}
+function onScanCatch(txt){
+  const p = parseQR(txt);
+  if (!p){
+    if (navigator.vibrate) navigator.vibrate([60,40,60]);
+    toast('⚠ QR sai format: "'+txt+'" (cần dạng LSX/KhốiLượng)');
+    $('status').textContent = '⚠ Bỏ qua QR sai format: ' + txt;
+    return;
+  }
+  if (batch.some(b => b.data === p.data || b.lsx === p.lsx)){
+    if (navigator.vibrate) navigator.vibrate([60,40,60]);
+    toast('LSX "'+p.lsx+'" đã có trong cuộn này');
+    $('status').textContent = 'Đã có LSX ' + p.lsx + ' — bỏ qua';
+    return;
+  }
+  batch.push(p);
+  renderBatch();
+  try { qr.pause(true); } catch(e){}
+  paused = true;
+  pendingQR = null;
+  beep(); flashOK(); if (navigator.vibrate) navigator.vibrate(110);
+  $('pendingBox').textContent = '✓ Đã thêm: ' + p.lsx + ' — ' + p.klyc + ' kg';
+  $('pendingBox').classList.remove('hide');
+  $('btnAddPending').classList.remove('hide');
+  $('status').textContent = 'Đã thêm vào cuộn. Bấm "Scan LSX khác" để quét tiếp.';
+}
+$('btnAddPending').onclick = () => {
+  $('pendingBox').classList.add('hide');
+  $('btnAddPending').classList.add('hide');
+  lastCode = '';
+  resumeScan();
+};
+function resumeScan(){
+  if (!qr || !scanning) return;
+  try { qr.resume(); } catch(e){}
+  paused = false; lastCode = '';
+  $('status').textContent = 'Đang quét... đưa QR tiếp theo vào khung';
+}
+function stopScan(){
+  if (qr && scanning) return qr.stop().then(()=>{
+    scanning=false; paused=false; pendingQR=null;
+    $('pendingBox').classList.add('hide'); $('btnAddPending').classList.add('hide');
+    setScanBtn('idle'); $('status').textContent='Đã dừng camera';
+  });
+  return Promise.resolve();
+}
+
+function parseQR(txt){
+  txt = ('' + (txt==null?'':txt)).trim();
+  const parts = txt.split('/');
+  if (parts.length !== 2) return null;
+  const lsx = parts[0].trim();
+  const klStr = parts[1].trim();
+  const kl = Number(klStr);
+  if (!lsx || !klStr || !isFinite(kl) || kl <= 0) return null;
+  return { data: txt, lsx: lsx, klyc: kl };
+}
+function tryAddData(txt, fromScan){
+  const p = parseQR(txt);
+  if (!p){
+    if (fromScan && navigator.vibrate) navigator.vibrate([60,40,60]);
+    toast('⚠ QR sai format: "'+txt+'" (cần dạng LSX/KhốiLượng)');
+    $('status').textContent = '⚠ Bỏ qua QR sai format: ' + txt;
+    return false;
+  }
+  if (batch.some(b => b.data === p.data || b.lsx === p.lsx)){
+    if (fromScan && navigator.vibrate) navigator.vibrate([60,40,60]);
+    toast('LSX "'+p.lsx+'" đã có trong cuộn này');
+    $('status').textContent = 'Đã có LSX ' + p.lsx + ' — bỏ qua';
+    return false;
+  }
+  batch.push(p);
+  renderBatch();
+  if (fromScan){ beep(); flashOK(); if (navigator.vibrate) navigator.vibrate(110); }
+  $('status').textContent = '✓ Đã thêm ' + p.lsx + ' (' + p.klyc + ') — tiếp tục quét...';
+  return true;
+}
+
+// Nhập tay
+$('btnManual').onclick = () => {
+  const v = $('manualFld').value.trim();
+  if (!v){ $('manualFld').focus(); return; }
+  if (tryAddData(v, false)) $('manualFld').value='';
+  $('manualFld').focus();
+};
+$('manualFld').addEventListener('keydown', e => { if (e.key==='Enter'){ e.preventDefault(); $('btnManual').click(); } });
+
+function renderBatch(){
+  const has = batch.length>0;
+  $('batchCount').textContent = 'Cuộn này: ' + batch.length + ' QR';
+  $('batchEmpty').style.display = has ? 'none' : 'block';
+  const tb = $('batchBody'); tb.innerHTML='';
+  batch.forEach((b,i) => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td>${i+1}</td><td>${esc(b.lsx)}</td><td>${esc(b.klyc)}</td><td class="del" data-i="${i}">✕</td>`;
+    tb.appendChild(tr);
+  });
+  tb.querySelectorAll('.del').forEach(el => el.onclick = e => { batch.splice(+e.target.dataset.i,1); lastCode=''; renderBatch(); });
+}
+
+// ---------- Dừng scan -> nhập khối lượng cuộn ----------
+$('btnStopScan').onclick = async () => {
+  if (!batch.length){ toast('Chưa quét QR nào cho cuộn này'); return; }
+  await stopScan();
+  const uniq = new Set(batch.map(b=>b.lsx)).size;
+  curMethod = uniq >= 2 ? 'GỘP' : 'ĐƠN';
+  const sumY = batch.reduce((a,b)=>a+b.klyc,0);
+  $('methodBox').textContent = '📦 ' + batch.length + ' LSX · Phương thức: ' + curMethod + ' · Tổng yêu cầu: ' + sumY + ' kg';
+  $('klcuonFld').value='';
+  showPhase('weight');
+  setTimeout(()=>$('klcuonFld').focus(), 200);
+};
+$('btnBackToScan').onclick = () => { showPhase('scan'); $('status').textContent='Quét tiếp QR cho cuộn này, hoặc bấm Dừng scan.'; };
+
+// ---------- Thuật toán phân bổ Kết quả SX ----------
+function allocate(C){
+  const Y = batch.map(b=>b.klyc);
+  const J = Y.slice();
+  const sumY = Y.reduce((a,b)=>a+b,0);
+  let diff = C - sumY;
+  if (diff >= 0){
+    J[J.length-1] += diff;
+  } else {
+    let need = -diff;
+    for (let i=J.length-1; i>=0 && need>0; i--){
+      const take = Math.min(J[i], need);
+      J[i] -= take; need -= take;
+    }
+  }
+  return J;
+}
+
+// ---------- Xem bảng phân bổ ----------
+$('btnCalc').onclick = () => {
+  const raw = $('klcuonFld').value.trim();
+  const C = Number(raw);
+  if (!raw || !isFinite(C) || C < 0){ toast('Nhập khối lượng cuộn hợp lệ'); $('klcuonFld').focus(); return; }
+  curKlcuon = C;
+  curAlloc = allocate(C);
+  const sumY = batch.reduce((a,b)=>a+b.klyc,0);
+  const sumJ = curAlloc.reduce((a,b)=>a+b,0);
+  $('previewInfo').textContent = '📦 ' + curMethod + ' · Khối lượng cuộn: ' + C + ' kg · Tổng yêu cầu: ' + sumY + ' kg';
+  const tb = $('previewBody'); tb.innerHTML='';
+  batch.forEach((b,i) => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td>${esc(b.lsx)}</td><td>${esc(b.klyc)}</td><td><b>${esc(curAlloc[i])}</b></td>`;
+    tb.appendChild(tr);
+  });
+  let sumLine = 'Tổng phân bổ: ' + sumJ + ' / ' + C + ' kg';
+  if (sumJ !== C) sumLine += ' ⚠';
+  $('previewSum').textContent = sumLine;
+  showPhase('preview');
+};
+$('btnBackToWeight').onclick = () => { showPhase('weight'); setTimeout(()=>$('klcuonFld').focus(),150); };
+
+// ---------- Hàng đợi gửi (offline-safe) ----------
+function renderQueueBadge(){
+  const el = $('queueBar');
+  if (!queue.length){ el.classList.add('hide'); return; }
+  el.classList.remove('hide'); el.classList.remove('ok');
+  const n = queue.length;
+  if (!navigator.onLine) el.textContent = '📦 ' + n + ' cuộn đã lưu tạm — chưa có mạng, sẽ tự gửi khi có mạng';
+  else if (flushing)     el.textContent = '📤 Đang gửi... còn ' + n + ' cuộn chờ';
+  else                   el.textContent = '⏳ ' + n + ' cuộn chờ gửi';
+}
+async function flushQueue(){
+  if (flushing) return;
+  if (!queue.length){ renderQueueBadge(); return; }
+  if (!navigator.onLine || !sheetUrl){ renderQueueBadge(); return; }
+  flushing = true; renderQueueBadge();
+  while (queue.length){
+    const item = queue[0];
+    try {
+      const res = await fetch(sheetUrl, {
+        method:'POST',
+        headers:{'Content-Type':'text/plain;charset=utf-8'},
+        body: JSON.stringify({ batchId: item.batchId || '', rows: item.rows })
+      });
+      const txt = await res.text();
+      let ok = false;
+      try { ok = JSON.parse(txt).ok === true; } catch(_) { ok = /(^|[^A-Za-z])OK([^A-Za-z]|$)/i.test(txt); }
+      if (ok){ queue.shift(); saveQ(); sentRolls++; renderQueueBadge(); }
+      else { break; }
+    } catch(e){
+      break;
+    }
+  }
+  flushing = false;
+  if (!queue.length){
+    const el = $('queueBar');
+    el.classList.remove('hide'); el.classList.add('ok'); el.textContent = '✓ Đã gửi hết, không còn cuộn chờ';
+    setTimeout(()=>{ if(!queue.length) el.classList.add('hide'); }, 4000);
+  } else {
+    renderQueueBadge();
+  }
+}
+
+// ---------- Xác nhận: lưu vào hàng đợi rồi cố gửi ----------
+$('btnConfirmSend').onclick = async () => {
+  if (!batch.length){ toast('Chưa có dữ liệu'); return; }
+  const time = nowStr();
+  const rows = batch.map((b,i)=>({
+    time: time, loai: sel.mode, cn: sel.cn, may: sel.may,
+    data: b.data, lsx: b.lsx, klyc: b.klyc,
+    phuongthuc: curMethod, klcuon: curKlcuon, ketqua: curAlloc[i]
+  }));
+  // Luôn lưu vào máy trước -> không bao giờ mất dữ liệu dù mất mạng
+  queue.push({ ts: Date.now(), batchId: genId(), rows: rows });
+  saveQ();
+  // Reset cuộn & về màn hình Thổi/In ngay (không chờ mạng)
+  try { await stopScan(); } catch(e){}
+  batch=[]; curAlloc=[]; curKlcuon=0; curMethod=''; lastCode=''; pendingQR=null; paused=false;
+  scanning=false;
+  $('pendingBox').classList.add('hide'); $('btnAddPending').classList.add('hide');
+  renderBatch();
+  showPhase('scan');
+  sel = { mode:'', cn:'', may:'' };
+  updateCrumbs();
+  show('step1');
+  renderQueueBadge();
+  if (navigator.onLine){ toast('📤 Đã lưu — đang gửi cuộn (' + rows.length + ' LSX)'); flushQueue(); }
+  else { toast('📦 Chưa có mạng — đã lưu tạm trên máy, sẽ tự gửi khi có mạng'); }
+};
+
+// ---------- PIN & Dashboard ----------
+$('btnDashboard').onclick = () => {
+  if (isAuthed) {
+    openDashboard();
+  } else {
+    $('pinInput').value = '';
+    $('pinModal').classList.add('show');
+    setTimeout(() => $('pinInput').focus(), 200);
+  }
+};
+$('pinCancel').onclick = () => $('pinModal').classList.remove('show');
+$('pinOk').onclick = checkPIN;
+$('pinInput').addEventListener('keydown', e => { if (e.key==='Enter'){ e.preventDefault(); checkPIN(); } });
+
+function checkPIN(){
+  const input = $('pinInput').value.trim();
+  if (!input){ toast('Vui lòng nhập PIN'); return; }
+  if (!storedPIN) {
+    toast('⚠ Chưa có PIN. Bấm ⚙️ tải lại danh sách để lấy PIN từ Sheet.');
+    return;
+  }
+  if (input === storedPIN) {
+    isAuthed = true;
+    $('pinModal').classList.remove('show');
+    openDashboard();
+  } else {
+    toast('❌ Sai PIN');
+    $('pinInput').value = '';
+    $('pinInput').focus();
+  }
+}
+
+function openDashboard(){
+  show('step5');
+  $('crumbs').innerHTML = '📊 <b>Kiểm tra kết quả</b>';
+  $('dashBody').innerHTML = '';
+  $('dashEmpty').classList.add('hide');
+  $('dashSummary').innerHTML = '<div class="sbox"><div class="slbl">Đang tải...</div></div>';
+  // Tải Master data từ Sheet
+  if (!sheetUrl){ toast('Chưa có link Sheet'); return; }
+  const cbName = '__tksx_dash_' + Date.now();
+  const s = document.createElement('script');
+  let done = false;
+  window[cbName] = function(data){
+    done = true;
+    cleanup();
+    dashData = data.master || [];
+    renderDashboard();
+  };
+  s.onerror = function(){ cleanup(); toast('⚠ Không tải được dữ liệu Master'); };
+  s.src = sheetUrl + '?action=master&callback=' + cbName + '&t=' + Date.now();
+  document.body.appendChild(s);
+  setTimeout(function(){ if(!done){ cleanup(); toast('⚠ Quá thời gian tải dữ liệu Master'); } }, 15000);
+  function cleanup(){ try{ delete window[cbName]; }catch(e){ window[cbName]=undefined; } if(s.parentNode) s.parentNode.removeChild(s); }
+}
+
+function renderDashboard(){
+  const q = ($('dashSearch').value || '').toLowerCase().trim();
+  let filtered = dashData;
+  if (dashFilter !== 'all') filtered = filtered.filter(r => r.loai === dashFilter);
+  if (q) filtered = filtered.filter(r => (r.lsx + ' ' + r.lsxGoc).toLowerCase().indexOf(q) !== -1);
+
+  // Summary
+  const totalLSX = filtered.length;
+  const done = filtered.filter(r => r.conLai <= 0).length;
+  const pending = totalLSX - done;
+  const rework = filtered.filter(r => r.loaiBu).length;
+  $('dashSummary').innerHTML =
+    '<div class="sbox"><div class="snum">' + totalLSX + '</div><div class="slbl">Tổng LSX</div></div>' +
+    '<div class="sbox"><div class="snum">' + done + '</div><div class="slbl">Đã đủ</div></div>' +
+    '<div class="sbox"><div class="snum">' + pending + '</div><div class="slbl">Còn thiếu</div></div>' +
+    '<div class="sbox"><div class="snum">' + rework + '</div><div class="slbl">LSX bù</div></div>';
+
+  // Table
+  const tb = $('dashBody');
+  tb.innerHTML = '';
+  if (!filtered.length){
+    $('dashEmpty').classList.remove('hide');
+    return;
+  }
+  $('dashEmpty').classList.add('hide');
+  filtered.forEach(r => {
+    const tr = document.createElement('tr');
+    const conLai = Number(r.conLai) || 0;
+    const isWarn = conLai < 0;
+    if (isWarn) tr.className = 'warn';
+    let loaiTag = '';
+    if (r.loaiBu === 'Nội bộ') loaiTag = '<span class="tag tag-nb">NB</span>';
+    else if (r.loaiBu === 'Khách hàng') loaiTag = '<span class="tag tag-kh">KH</span>';
+    else loaiTag = '<span class="tag tag-goc">Gốc</span>';
+    tr.innerHTML =
+      '<td>' + esc(r.lsx) + '</td>' +
+      '<td>' + esc(r.klyc) + '</td>' +
+      '<td>' + esc(r.tongSX) + '</td>' +
+      '<td class="' + (conLai < 0 ? 'neg' : conLai > 0 ? 'pos' : '') + '">' + conLai + '</td>' +
+      '<td>' + esc(r.soLanSX) + '</td>' +
+      '<td>' + loaiTag + '</td>';
+    tb.appendChild(tr);
+  });
+}
+
+// Dashboard filter buttons
+$('dashFilter').addEventListener('click', e => {
+  const btn = e.target.closest('[data-f]');
+  if (!btn) return;
+  dashFilter = btn.dataset.f;
+  $('dashFilter').querySelectorAll('button').forEach(b => b.classList.toggle('active', b === btn));
+  renderDashboard();
+});
+$('dashSearch').addEventListener('input', () => renderDashboard());
+$('dashBack').onclick = () => { $('crumbs').innerHTML = ''; show('step1'); };
+
+// ---------- Cài đặt & tải master (JSONP) ----------
+function openSettings(){ $('urlInput').value = sheetUrl; $('modal').classList.add('show'); }
+$('gear').onclick = openSettings;
+$('btnCancel').onclick = () => $('modal').classList.remove('show');
+$('btnSaveUrl').onclick = () => {
+  sheetUrl = $('urlInput').value.trim();
+  localStorage.setItem(URLKEY, sheetUrl);
+  loadMasters(true);
+};
+$('btnReload').onclick = () => loadMasters(true);
+
+function loadMasters(closeModal){
+  if (!sheetUrl){ toast('Hãy dán link /exec trước'); return; }
+  toast('⏳ Đang tải danh sách CN/Máy...');
+  const cbName = '__tksx_cb_' + Date.now();
+  const s = document.createElement('script');
+  let done = false;
+  window[cbName] = function(data){
+    done = true;
+    // Lưu PIN nếu có
+    if (data.pin) {
+      storedPIN = '' + data.pin;
+      localStorage.setItem(PINKEY, storedPIN);
+    }
+    // Lưu masters (bỏ key pin ra)
+    delete data.pin;
+    masters = data;
+    localStorage.setItem(MKEY, JSON.stringify(data));
+    cleanup();
+    const tot = (data.cn_in||[]).length + (data.cn_thoi||[]).length + (data.may_in||[]).length + (data.may_thoi||[]).length;
+    toast('✓ Đã tải danh sách ('+tot+' mục)');
+    if (closeModal) $('modal').classList.remove('show');
+  };
+  s.onerror = function(){ cleanup(); toast('⚠ Tải DS lỗi — kiểm tra link /exec & quyền "Anyone".'); };
+  s.src = sheetUrl + '?callback=' + cbName + '&t=' + Date.now();
+  document.body.appendChild(s);
+  setTimeout(function(){ if(!done){ cleanup(); toast('⚠ Quá thời gian tải DS. Kiểm tra link & mạng.'); } }, 12000);
+  function cleanup(){ try{ delete window[cbName]; }catch(e){ window[cbName]=undefined; } if (s.parentNode) s.parentNode.removeChild(s); }
+}
+
+// ---------- Tự gửi lại khi có mạng ----------
+window.addEventListener('online', () => { toast('🌐 Đã có mạng — đang gửi dữ liệu chờ'); flushQueue(); });
+window.addEventListener('offline', renderQueueBadge);
+setInterval(() => { if (queue.length && navigator.onLine && !flushing) flushQueue(); }, 20000);
+
+// ---------- Khởi động ----------
+if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(()=>{});
+show('step1');
+updateCrumbs();
+renderQueueBadge();
+flushQueue();
+if (sheetUrl && !masters) loadMasters(false);
+</script>
+</body>
+</html>
