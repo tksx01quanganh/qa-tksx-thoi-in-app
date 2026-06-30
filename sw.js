@@ -1,5 +1,5 @@
 // Service worker - cho phép cài như app & chạy giao diện offline
-const CACHE = 'tksx-v14';
+const CACHE = 'tksx-v15';
 const ASSETS = [
   './', './index.html', './kiemke.html', './manifest.json', './icon-192.png', './icon-512.png',
   'https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js'
