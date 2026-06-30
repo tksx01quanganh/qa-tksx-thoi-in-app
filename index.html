@@ -598,7 +598,7 @@ async function flushQueue(){
       const res = await fetch(sheetUrl, {
         method:'POST',
         headers:{'Content-Type':'text/plain;charset=utf-8'},
-        body: JSON.stringify({ batchId: item.batchId || '', rows: item.rows })
+        body: JSON.stringify({ batchId: item.batchId || '', type: item.type || '', rows: item.rows })
       });
       const txt = await res.text();
       let ok = false;
