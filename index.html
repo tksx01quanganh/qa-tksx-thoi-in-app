@@ -968,25 +968,37 @@ function startChuyenScan(){
 }
 
 function onChuyenScan(txt){
-  const lsx = parseLSXFromQR(txt);
-  if (!lsx){
-    if (navigator.vibrate) navigator.vibrate([60,40,60]);
-    toast('⚠ QR sai format: "'+txt+'"');
-    $('chuyenStatus').textContent = '⚠ Bỏ qua QR sai format';
-    return;
+  const p = parseQR(txt); // dùng lại parseQR có sẵn: trả {data, lsx, klyc}
+  if (!p){
+    // Thử parse chỉ LSX (không có KL)
+    const lsx = parseLSXFromQR(txt);
+    if (!lsx){
+      if (navigator.vibrate) navigator.vibrate([60,40,60]);
+      toast('⚠ QR sai format: "'+txt+'"');
+      $('chuyenStatus').textContent = '⚠ Bỏ qua QR sai format';
+      return;
+    }
+    // QR chỉ có LSX, không có KL — vẫn chấp nhận
+    if (chuyenBatch.some(b => b.lsx === lsx)){
+      if (navigator.vibrate) navigator.vibrate([60,40,60]);
+      toast('LSX "'+lsx+'" đã có trong cuộn này');
+      return;
+    }
+    chuyenBatch.push({ lsx: lsx, klyc: 0 });
+  } else {
+    if (chuyenBatch.some(b => b.lsx === p.lsx)){
+      if (navigator.vibrate) navigator.vibrate([60,40,60]);
+      toast('LSX "'+p.lsx+'" đã có trong cuộn này');
+      return;
+    }
+    chuyenBatch.push({ lsx: p.lsx, klyc: p.klyc });
   }
-  if (chuyenBatch.some(b => b.lsx === lsx)){
-    if (navigator.vibrate) navigator.vibrate([60,40,60]);
-    toast('LSX "'+lsx+'" đã có trong cuộn này');
-    $('chuyenStatus').textContent = 'Đã có LSX ' + lsx + ' — bỏ qua';
-    return;
-  }
-  chuyenBatch.push({ lsx: lsx });
   renderChuyenBatch();
   try { qrChuyen.pause(true); } catch(e){}
   chuyenPaused = true;
   beep(); flashOK(); if (navigator.vibrate) navigator.vibrate(110);
-  $('chuyenPendingBox').textContent = '✓ Đã thêm: ' + lsx;
+  const added = chuyenBatch[chuyenBatch.length-1];
+  $('chuyenPendingBox').textContent = '✓ Đã thêm: ' + added.lsx + (added.klyc ? ' (KLYC: '+added.klyc+' kg)' : '');
   $('chuyenPendingBox').classList.remove('hide');
   $('btnChuyenAddMore').classList.remove('hide');
   $('chuyenStatus').textContent = 'Đã thêm. Bấm "Scan LSX khác" nếu cuộn ghép.';
@@ -1018,14 +1030,16 @@ function stopChuyenScan(){
   return Promise.resolve();
 }
 
-// Nhập tay cho chuyển cuộn
+// Nhập tay cho chuyển cuộn (hỗ trợ LSX hoặc LSX/KL)
 $('btnChuyenManual').onclick = () => {
   const v = $('chuyenManualFld').value.trim();
   if (!v){ $('chuyenManualFld').focus(); return; }
-  const lsx = parseLSXFromQR(v);
+  const p = parseQR(v);
+  const lsx = p ? p.lsx : v.split('/')[0].trim();
+  const klyc = p ? p.klyc : 0;
   if (!lsx){ toast('⚠ Nhập mã LSX hợp lệ'); return; }
   if (chuyenBatch.some(b => b.lsx === lsx)){ toast('LSX "'+lsx+'" đã có'); return; }
-  chuyenBatch.push({ lsx: lsx });
+  chuyenBatch.push({ lsx: lsx, klyc: klyc });
   renderChuyenBatch();
   $('chuyenManualFld').value = '';
   $('chuyenManualFld').focus();
@@ -1043,24 +1057,24 @@ $('btnChuyenNext').onclick = async () => {
   setTimeout(()=>$('chuyenKLFld').focus(), 200);
 };
 
-// Xác nhận chuyển cuộn
+// Xác nhận chuyển cuộn — gửi từng LSX riêng, server phân bổ KL
 $('btnChuyenSend').onclick = async () => {
   const raw = $('chuyenKLFld').value.trim();
   const kl = Number(raw);
   if (!raw || !isFinite(kl) || kl <= 0){ toast('Nhập khối lượng hợp lệ'); $('chuyenKLFld').focus(); return; }
   const time = nowStr();
-  const lsxList = chuyenBatch.map(b => b.lsx).join(', ');
-  const rows = [{ time: time, lsx: lsxList, klcuon: kl }];
+  const rows = chuyenBatch.map(b => ({ time: time, lsx: b.lsx, klyc: b.klyc, klcuon: kl }));
   queue.push({ ts: Date.now(), batchId: genId(), type: 'chuyencuon', rows: rows });
   saveQ();
   try { await stopChuyenScan(); } catch(e){}
+  const n = chuyenBatch.length;
   chuyenBatch = []; chuyenLastCode = '';
   renderChuyenBatch();
   showChuyenPhase('scan');
   $('crumbs').innerHTML = '';
   show('step1');
   renderQueueBadge();
-  if (navigator.onLine){ toast('📤 Đã lưu — đang gửi chuyển cuộn (' + lsxList + ', ' + kl + ' kg)'); flushQueue(); }
+  if (navigator.onLine){ toast('📤 Đã lưu — đang gửi chuyển cuộn (' + n + ' LSX, ' + kl + ' kg)'); flushQueue(); }
   else { toast('📦 Đã lưu tạm, sẽ tự gửi khi có mạng'); }
 };
 
