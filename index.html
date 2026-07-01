@@ -944,7 +944,7 @@ function startChuyenScan(){
     txt => {
       if (chuyenPaused) return;
       const t = Date.now();
-      if (txt===chuyenLastCode && t-chuyenLastT<1500) return;
+      if (t-chuyenLastT<1500) return;
       chuyenLastCode = txt; chuyenLastT = t;
       onChuyenScan(txt);
     }, ()=>{}
