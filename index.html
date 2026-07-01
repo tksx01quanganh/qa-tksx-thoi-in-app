@@ -231,24 +231,15 @@
       <button class="b-manual" id="btnChuyenManual" style="padding:0 18px;width:auto">＋</button>
     </div>
 
-    <div style="font-weight:600;margin:14px 0 8px" id="chuyenCount">Cuộn này: 0 LSX</div>
+    <div style="font-weight:600;margin:14px 0 8px" id="chuyenCount">Đã quét: 0 LSX</div>
     <table>
       <thead><tr><th>#</th><th>LSX</th><th></th></tr></thead>
       <tbody id="chuyenBody"></tbody>
     </table>
     <div class="empty" id="chuyenEmpty">Chưa quét QR nào</div>
 
-    <button class="b-send full" id="btnChuyenNext" style="margin-top:12px">→ Nhập khối lượng cuộn</button>
-    <button class="b-back full" id="btnChuyenBack" style="margin-top:8px">← Về trang chính</button>
-  </div>
-
-  <!-- Weight + confirm phase -->
-  <div id="chuyenWeightPhase" class="hide">
-    <div class="lsxbox" id="chuyenInfo"></div>
-    <label>Khối lượng cuộn thực tế (kg)</label>
-    <input class="fld" id="chuyenKLFld" placeholder="VD: 135" autocomplete="off" inputmode="decimal" enterkeyhint="done">
     <button class="b-send full" id="btnChuyenSend" style="margin-top:12px">📤 Xác nhận chuyển cuộn</button>
-    <button class="b-back full" id="btnChuyenBackScan" style="margin-top:8px">← Quét tiếp</button>
+    <button class="b-back full" id="btnChuyenBack" style="margin-top:8px">← Về trang chính</button>
   </div>
 </div>
 
@@ -913,19 +904,13 @@ function enterChuyenCuon(){
   $('chuyenPendingBox').classList.add('hide');
   $('btnChuyenAddMore').classList.add('hide');
   renderChuyenBatch();
-  showChuyenPhase('scan');
   $('crumbs').innerHTML = '📦 <b>Chuyển cuộn sang Cắt</b>';
   show('step8');
 }
 
-function showChuyenPhase(p){
-  $('chuyenScanPhase').classList.toggle('hide', p!=='scan');
-  $('chuyenWeightPhase').classList.toggle('hide', p!=='weight');
-}
-
 function renderChuyenBatch(){
   const has = chuyenBatch.length > 0;
-  $('chuyenCount').textContent = 'Cuộn này: ' + chuyenBatch.length + ' LSX';
+  $('chuyenCount').textContent = 'Đã quét: ' + chuyenBatch.length + ' LSX';
   $('chuyenEmpty').style.display = has ? 'none' : 'block';
   const tb = $('chuyenBody'); tb.innerHTML = '';
   chuyenBatch.forEach((b, i) => {
@@ -1047,39 +1032,25 @@ $('btnChuyenManual').onclick = () => {
 };
 $('chuyenManualFld').addEventListener('keydown', e => { if(e.key==='Enter'){ e.preventDefault(); $('btnChuyenManual').click(); } });
 
-// Chuyển sang nhập KL
-$('btnChuyenNext').onclick = async () => {
-  if (!chuyenBatch.length){ toast('Chưa quét QR nào'); return; }
-  await stopChuyenScan();
-  $('chuyenInfo').textContent = '📦 ' + chuyenBatch.length + ' LSX: ' + chuyenBatch.map(b=>b.lsx).join(', ');
-  $('chuyenKLFld').value = '';
-  showChuyenPhase('weight');
-  setTimeout(()=>$('chuyenKLFld').focus(), 200);
-};
-
-// Xác nhận chuyển cuộn — gửi từng LSX riêng, server phân bổ KL
+// Xác nhận chuyển cuộn — gửi danh sách LSX, server tự tính KL từ data SX
 $('btnChuyenSend').onclick = async () => {
-  const raw = $('chuyenKLFld').value.trim();
-  const kl = Number(raw);
-  if (!raw || !isFinite(kl) || kl <= 0){ toast('Nhập khối lượng hợp lệ'); $('chuyenKLFld').focus(); return; }
+  if (!chuyenBatch.length){ toast('Chưa quét QR nào'); return; }
   const time = nowStr();
-  const rows = chuyenBatch.map(b => ({ time: time, lsx: b.lsx, klyc: b.klyc, klcuon: kl }));
+  const rows = chuyenBatch.map(b => ({ time: time, lsx: b.lsx }));
   queue.push({ ts: Date.now(), batchId: genId(), type: 'chuyencuon', rows: rows });
   saveQ();
   try { await stopChuyenScan(); } catch(e){}
   const n = chuyenBatch.length;
   chuyenBatch = []; chuyenLastCode = '';
   renderChuyenBatch();
-  showChuyenPhase('scan');
   $('crumbs').innerHTML = '';
   show('step1');
   renderQueueBadge();
-  if (navigator.onLine){ toast('📤 Đã lưu — đang gửi chuyển cuộn (' + n + ' LSX, ' + kl + ' kg)'); flushQueue(); }
+  if (navigator.onLine){ toast('📤 Đã lưu — đang gửi chuyển cuộn (' + n + ' LSX)'); flushQueue(); }
   else { toast('📦 Đã lưu tạm, sẽ tự gửi khi có mạng'); }
 };
 
 $('btnChuyenBack').onclick = async () => { await stopChuyenScan(); chuyenBatch=[]; renderChuyenBatch(); $('crumbs').innerHTML=''; show('step1'); };
-$('btnChuyenBackScan').onclick = () => { showChuyenPhase('scan'); $('chuyenStatus').textContent='Quét tiếp hoặc bấm → Nhập khối lượng.'; };
 
 // ---------- Tự gửi lại khi có mạng ----------
 window.addEventListener('online', () => { toast('🌐 Đã có mạng — đang gửi dữ liệu chờ'); flushQueue(); });
