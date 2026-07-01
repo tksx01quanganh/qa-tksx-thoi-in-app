@@ -964,18 +964,8 @@ function onChuyenScan(txt){
       return;
     }
     // QR chỉ có LSX, không có KL — vẫn chấp nhận
-    if (chuyenBatch.some(b => b.lsx === lsx)){
-      if (navigator.vibrate) navigator.vibrate([60,40,60]);
-      toast('LSX "'+lsx+'" đã có trong cuộn này');
-      return;
-    }
     chuyenBatch.push({ lsx: lsx, klyc: 0 });
   } else {
-    if (chuyenBatch.some(b => b.lsx === p.lsx)){
-      if (navigator.vibrate) navigator.vibrate([60,40,60]);
-      toast('LSX "'+p.lsx+'" đã có trong cuộn này');
-      return;
-    }
     chuyenBatch.push({ lsx: p.lsx, klyc: p.klyc });
   }
   renderChuyenBatch();
@@ -1023,7 +1013,6 @@ $('btnChuyenManual').onclick = () => {
   const lsx = p ? p.lsx : v.split('/')[0].trim();
   const klyc = p ? p.klyc : 0;
   if (!lsx){ toast('⚠ Nhập mã LSX hợp lệ'); return; }
-  if (chuyenBatch.some(b => b.lsx === lsx)){ toast('LSX "'+lsx+'" đã có'); return; }
   chuyenBatch.push({ lsx: lsx, klyc: klyc });
   renderChuyenBatch();
   $('chuyenManualFld').value = '';
