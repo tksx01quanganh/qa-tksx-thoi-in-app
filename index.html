@@ -928,11 +928,15 @@ function renderDashboard(){
     '<div class="sbox"><div class="snum">' + done + '</div><div class="slbl">Đã đủ</div></div>' +
     '<div class="sbox"><div class="snum">' + pending + '</div><div class="slbl">Còn thiếu</div></div>';
 
-  // Chỉ vẽ tối đa 300 dòng cho nhẹ màn hình (dữ liệu tìm kiếm vẫn là toàn bộ)
+  // Chỉ vẽ tối đa 300 dòng cho nhẹ màn hình (tìm kiếm vẫn lọc trên toàn bộ Master)
   const shown = filtered.slice(0, 300);
-  $('dashNote').textContent = filtered.length > shown.length
-    ? '📄 Hiển thị ' + shown.length + ' / ' + filtered.length + ' kết quả (mới nhất trên đầu) — gõ thêm số để thu hẹp'
-    : (filtered.length ? '📄 ' + filtered.length + ' kết quả — mới nhất trên đầu' : '');
+  if (!q && filtered.length > shown.length) {
+    $('dashNote').textContent = '📄 Đang hiển thị 300 LSX gần nhất (tổng ' + filtered.length + ' LSX) — tìm kiếm sẽ tự lọc trên toàn bộ Master';
+  } else if (filtered.length > shown.length) {
+    $('dashNote').textContent = '📄 Hiển thị ' + shown.length + ' / ' + filtered.length + ' kết quả — gõ thêm số để thu hẹp';
+  } else {
+    $('dashNote').textContent = filtered.length ? '📄 ' + filtered.length + ' kết quả — mới nhất trên đầu' : '';
+  }
 
   // Table
   const tb = $('dashBody');
@@ -942,9 +946,10 @@ function renderDashboard(){
     return;
   }
   $('dashEmpty').classList.add('hide');
+  const rnd2 = n => Math.round((Number(n) || 0) * 100) / 100; // làm tròn 2 chữ số thập phân
   shown.forEach(r => {
     const tr = document.createElement('tr');
-    const conLai = Number(r.conLai) || 0;
+    const conLai = rnd2(r.conLai);
     const isWarn = conLai < 0;
     if (isWarn) tr.className = 'warn';
     // LSX: nếu có trong sheet đơn hàng -> link mở đúng dòng đơn hàng
@@ -956,8 +961,8 @@ function renderDashboard(){
     tr.innerHTML =
       '<td>' + lsxCell + '</td>' +
       '<td>' + esc(r.kh || '') + '</td>' +
-      '<td>' + esc(r.klyc) + '</td>' +
-      '<td>' + esc(r.tongSX) + '</td>' +
+      '<td>' + rnd2(r.klyc) + '</td>' +
+      '<td>' + rnd2(r.tongSX) + '</td>' +
       '<td class="' + (conLai < 0 ? 'neg' : conLai > 0 ? 'pos' : '') + '">' + conLai + '</td>' +
       '<td>' + esc(r.soLanSX) + '</td>';
     tb.appendChild(tr);
