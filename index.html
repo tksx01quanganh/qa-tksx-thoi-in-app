@@ -202,17 +202,22 @@
   <button class="b-go full" id="btnDailyLoad">🔍 Xem báo cáo</button>
   <button class="b-back full" id="dailyBack" style="margin:8px 0">← Về trang chính</button>
   <div class="status" id="dailyStatus" style="text-align:left;margin:0 0 6px"></div>
+  <div class="dash-filter" id="dailyFilter">
+    <button class="active" data-df="all">Tất cả</button>
+    <button data-df="Thổi">💨 Thổi</button>
+    <button data-df="In">🖨️ In</button>
+  </div>
   <div class="dash-summary" id="dailySummary"></div>
   <div id="dailyContent" class="hide">
     <p class="steptitle" style="margin:12px 0 6px">🏭 Sản lượng theo máy</p>
     <table class="dash-table">
-      <thead><tr><th>Tổ</th><th>Máy</th><th>Sản lượng (kg)</th><th>Số cuộn</th></tr></thead>
+      <thead><tr><th>Máy</th><th>Sản lượng (kg)</th><th>Số cuộn</th></tr></thead>
       <tbody id="dailySxBody"></tbody>
     </table>
     <div class="empty hide" id="dailySxEmpty">Không có dữ liệu sản xuất trong khoảng ngày này</div>
     <p class="steptitle" style="margin:16px 0 6px">🗑️ Phế theo máy</p>
     <table class="dash-table">
-      <thead><tr><th>Tổ</th><th>Máy</th><th>Phế trơn</th><th>Phế màu</th><th>Tổng</th></tr></thead>
+      <thead><tr><th>Máy</th><th>Phế trơn</th><th>Phế màu</th><th>Tổng</th></tr></thead>
       <tbody id="dailyPheBody"></tbody>
     </table>
     <div class="empty hide" id="dailyPheEmpty">Không có ghi nhận phế trong khoảng ngày này</div>
@@ -978,47 +983,105 @@ function loadDaily(){
   function cleanup(){ try{ delete window[cbName]; }catch(e){ window[cbName]=undefined; } if(s.parentNode) s.parentNode.removeChild(s); }
 }
 
+let dailyData = { sx: [], phe: [] };  // dữ liệu đã tải — lọc Tổ không cần tải lại
+let dailyFilter = 'all';
+
 function renderDaily(sx, phe){
+  dailyData = { sx: sx || [], phe: phe || [] };
+  drawDaily();
+}
+
+// Thứ tự nhóm: Thổi trước, In sau, loại khác (nếu có) xuống cuối
+function dailyGroups(rows){
+  const order = ['Thổi', 'In'];
+  rows.forEach(r => { if (order.indexOf(r.loai) === -1) order.push(r.loai); });
+  return order;
+}
+function grpStyle(g){
+  return g === 'Thổi'
+    ? { bg: '#e0f2fe', color: '#0369a1', icon: '💨' }
+    : g === 'In'
+      ? { bg: '#fef3c7', color: '#92400e', icon: '🖨️' }
+      : { bg: '#f3f4f6', color: '#374151', icon: '⚙️' };
+}
+
+function drawDaily(){
   const rnd = n => Math.round(n * 100) / 100;
-  // Summary theo tổ
+  const sxAll = dailyData.sx, pheAll = dailyData.phe;
+
+  // Summary: luôn hiện tổng cả 2 tổ (để so sánh nhanh)
   let tongThoi = 0, tongIn = 0, tongPhe = 0;
-  sx.forEach(r => { if (r.loai === 'Thổi') tongThoi += Number(r.tong)||0; else if (r.loai === 'In') tongIn += Number(r.tong)||0; });
-  phe.forEach(r => { tongPhe += (Number(r.tron)||0) + (Number(r.mau)||0); });
+  sxAll.forEach(r => { if (r.loai === 'Thổi') tongThoi += Number(r.tong)||0; else if (r.loai === 'In') tongIn += Number(r.tong)||0; });
+  pheAll.forEach(r => { tongPhe += (Number(r.tron)||0) + (Number(r.mau)||0); });
   $('dailySummary').innerHTML =
     '<div class="sbox"><div class="snum">' + rnd(tongThoi) + '</div><div class="slbl">💨 Thổi (kg)</div></div>' +
     '<div class="sbox"><div class="snum">' + rnd(tongIn) + '</div><div class="slbl">🖨️ In (kg)</div></div>' +
     '<div class="sbox"><div class="snum" style="color:#dc2626">' + rnd(tongPhe) + '</div><div class="slbl">🗑️ Phế (kg)</div></div>';
 
-  // Bảng SX theo máy
+  // Áp bộ lọc Tổ
+  const sx = dailyFilter === 'all' ? sxAll : sxAll.filter(r => r.loai === dailyFilter);
+  const phe = dailyFilter === 'all' ? pheAll : pheAll.filter(r => r.loai === dailyFilter);
+
+  // Bảng SX: nhóm theo Tổ — dòng tiêu đề nhóm (kèm tổng nhóm), máy bên dưới
   const sxTb = $('dailySxBody'); sxTb.innerHTML = '';
   $('dailySxEmpty').classList.toggle('hide', sx.length > 0);
-  sx.forEach(r => {
-    const tr = document.createElement('tr');
-    tr.innerHTML =
-      '<td>' + (r.loai === 'Thổi' ? '💨' : '🖨️') + ' ' + esc(r.loai) + '</td>' +
-      '<td>' + esc(r.may) + '</td>' +
-      '<td><b>' + esc(r.tong) + '</b></td>' +
-      '<td>' + esc(r.soCuon) + '</td>';
-    sxTb.appendChild(tr);
+  dailyGroups(sx).forEach(g => {
+    const rows = sx.filter(r => r.loai === g);
+    if (!rows.length) return;
+    const st = grpStyle(g);
+    const subKg = rnd(rows.reduce((a, r) => a + (Number(r.tong)||0), 0));
+    const subCuon = rows.reduce((a, r) => a + (Number(r.soCuon)||0), 0);
+    const hdr = document.createElement('tr');
+    hdr.innerHTML = '<td colspan="3" style="background:' + st.bg + ';color:' + st.color + ';font-weight:700">' +
+      st.icon + ' ' + esc(g) + ' — ' + subKg + ' kg · ' + subCuon + ' cuộn</td>';
+    sxTb.appendChild(hdr);
+    rows.forEach(r => {
+      const tr = document.createElement('tr');
+      tr.innerHTML =
+        '<td style="padding-left:20px">' + esc(r.may) + '</td>' +
+        '<td><b>' + esc(r.tong) + '</b></td>' +
+        '<td>' + esc(r.soCuon) + '</td>';
+      sxTb.appendChild(tr);
+    });
   });
 
-  // Bảng Phế theo máy
+  // Bảng Phế: nhóm theo Tổ giống bảng SX
   const pheTb = $('dailyPheBody'); pheTb.innerHTML = '';
   $('dailyPheEmpty').classList.toggle('hide', phe.length > 0);
-  phe.forEach(r => {
-    const tr = document.createElement('tr');
-    const tong = rnd((Number(r.tron)||0) + (Number(r.mau)||0));
-    tr.innerHTML =
-      '<td>' + (r.loai === 'Thổi' ? '💨' : '🖨️') + ' ' + esc(r.loai) + '</td>' +
-      '<td>' + esc(r.may) + '</td>' +
-      '<td>' + esc(r.tron) + '</td>' +
-      '<td>' + esc(r.mau) + '</td>' +
-      '<td><b>' + tong + '</b></td>';
-    pheTb.appendChild(tr);
+  dailyGroups(phe).forEach(g => {
+    const rows = phe.filter(r => r.loai === g);
+    if (!rows.length) return;
+    const st = grpStyle(g);
+    const subTron = rnd(rows.reduce((a, r) => a + (Number(r.tron)||0), 0));
+    const subMau = rnd(rows.reduce((a, r) => a + (Number(r.mau)||0), 0));
+    const subTong = rnd(subTron + subMau);
+    const hdr = document.createElement('tr');
+    hdr.innerHTML = '<td colspan="4" style="background:' + st.bg + ';color:' + st.color + ';font-weight:700">' +
+      st.icon + ' ' + esc(g) + ' — ' + subTong + ' kg (trơn ' + subTron + ' · màu ' + subMau + ')</td>';
+    pheTb.appendChild(hdr);
+    rows.forEach(r => {
+      const tr = document.createElement('tr');
+      const tong = rnd((Number(r.tron)||0) + (Number(r.mau)||0));
+      tr.innerHTML =
+        '<td style="padding-left:20px">' + esc(r.may) + '</td>' +
+        '<td>' + esc(r.tron) + '</td>' +
+        '<td>' + esc(r.mau) + '</td>' +
+        '<td><b>' + tong + '</b></td>';
+      pheTb.appendChild(tr);
+    });
   });
 
   $('dailyContent').classList.remove('hide');
 }
+
+// Nút lọc Tổ — chỉ vẽ lại từ dữ liệu đã tải, không gọi mạng
+$('dailyFilter').addEventListener('click', e => {
+  const btn = e.target.closest('[data-df]');
+  if (!btn) return;
+  dailyFilter = btn.dataset.df;
+  $('dailyFilter').querySelectorAll('button').forEach(b => b.classList.toggle('active', b === btn));
+  drawDaily();
+});
 
 // Dashboard filter buttons
 $('dashFilter').addEventListener('click', e => {
