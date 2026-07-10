@@ -182,6 +182,7 @@
   </div>
   <input class="search" id="dashSearch" placeholder="🔎 Tìm LSX hoặc khách hàng..." autocomplete="off">
   <button class="b-back full" id="dashBack" style="margin:8px 0">← Về trang chính</button>
+  <div class="status" id="dashStatus" style="text-align:left;margin:0 0 6px"></div>
   <div class="dash-scroll">
     <table class="dash-table">
       <thead><tr><th>LSX</th><th>KH</th><th>KLYC</th><th>Tổng SX</th><th>Còn lại</th><th>SL</th></tr></thead>
@@ -200,6 +201,7 @@
   </div>
   <button class="b-go full" id="btnDailyLoad">🔍 Xem báo cáo</button>
   <button class="b-back full" id="dailyBack" style="margin:8px 0">← Về trang chính</button>
+  <div class="status" id="dailyStatus" style="text-align:left;margin:0 0 6px"></div>
   <div class="dash-summary" id="dailySummary"></div>
   <div id="dailyContent" class="hide">
     <p class="steptitle" style="margin:12px 0 6px">🏭 Sản lượng theo máy</p>
@@ -301,6 +303,7 @@
 
 <script>
 const URLKEY = 'tksx_url', MKEY = 'tksx_masters', QKEY = 'tksx_queue', PINKEY = 'tksx_pin', PINCKEY = 'tksx_pin_chuyen';
+const DASHCACHE = 'tksx_dash_cache', DAILYCACHE = 'tksx_daily_cache';
 // Link Google Sheet gắn sẵn -> mọi điện thoại tự kết nối, chỉ cần mở 1 link Netlify
 const DEFAULT_URL = 'https://script.google.com/macros/s/AKfycbztgdaMXNFinyvZWXeO18tGHFFUKXW6V0XvvbWNR71L311WnsbVVWDreYSuLsdpZnrsiA/exec';
 let sheetUrl = localStorage.getItem(URLKEY) || DEFAULT_URL;
@@ -798,13 +801,34 @@ function checkPIN(){
   }
 }
 
+function timeStr(){ const d=new Date(),p=n=>String(n).padStart(2,'0'); return p(d.getHours())+':'+p(d.getMinutes()); }
+function applyMasterData(data){
+  dashData = data.master || [];
+  khMap = data.khMap || {};
+  khUrl = data.khUrl || '';
+  khCol = data.khCol || 'A';
+}
+
 function openDashboard(){
   show('step5');
   $('crumbs').innerHTML = '📊 <b>Kiểm tra kết quả</b>';
-  $('dashBody').innerHTML = '';
   $('dashEmpty').classList.add('hide');
-  $('dashSummary').innerHTML = '<div class="sbox"><div class="slbl">Đang tải...</div></div>';
-  // Tải Master data từ Sheet
+
+  // 1) Hiện NGAY bản đã lưu trên máy (nếu có) — không bắt chờ mạng
+  let cached = null;
+  try { cached = JSON.parse(localStorage.getItem(DASHCACHE) || 'null'); } catch(e){}
+  const hasCache = cached && cached.data;
+  if (hasCache){
+    applyMasterData(cached.data);
+    renderDashboard();
+    $('dashStatus').textContent = '📥 Bản lưu lúc ' + (cached.time || '') + ' — đang cập nhật...';
+  } else {
+    $('dashBody').innerHTML = '';
+    $('dashSummary').innerHTML = '<div class="sbox"><div class="slbl">Đang tải...</div></div>';
+    $('dashStatus').textContent = '';
+  }
+
+  // 2) Tải bản mới từ Sheet chạy ngầm
   if (!sheetUrl){ toast('Chưa có link Sheet'); return; }
   const cbName = '__tksx_dash_' + Date.now();
   const s = document.createElement('script');
@@ -812,16 +836,25 @@ function openDashboard(){
   window[cbName] = function(data){
     done = true;
     cleanup();
-    dashData = data.master || [];
-    khMap = data.khMap || {};
-    khUrl = data.khUrl || '';
-    khCol = data.khCol || 'A';
+    applyMasterData(data);
+    try { localStorage.setItem(DASHCACHE, JSON.stringify({ time: timeStr(), data: data })); } catch(e){}
     renderDashboard();
+    $('dashStatus').textContent = '✓ Đã cập nhật lúc ' + timeStr();
   };
-  s.onerror = function(){ cleanup(); toast('⚠ Không tải được dữ liệu Master'); };
+  s.onerror = function(){
+    cleanup();
+    if (hasCache) $('dashStatus').textContent = '⚠ Không cập nhật được — đang xem bản lưu lúc ' + (cached.time || '');
+    else toast('⚠ Không tải được dữ liệu Master');
+  };
   s.src = sheetUrl + '?action=master&callback=' + cbName + '&t=' + Date.now();
   document.body.appendChild(s);
-  setTimeout(function(){ if(!done){ cleanup(); toast('⚠ Quá thời gian tải dữ liệu Master'); } }, 15000);
+  setTimeout(function(){
+    if(!done){
+      cleanup();
+      if (hasCache) $('dashStatus').textContent = '⚠ Mạng chậm — đang xem bản lưu lúc ' + (cached.time || '');
+      else toast('⚠ Quá thời gian tải dữ liệu Master');
+    }
+  }, 15000);
   function cleanup(){ try{ delete window[cbName]; }catch(e){ window[cbName]=undefined; } if(s.parentNode) s.parentNode.removeChild(s); }
 }
 
@@ -902,8 +935,22 @@ function loadDaily(){
   let from = $('dFrom').value || todayISO();
   let to = $('dTo').value || todayISO();
   if (from > to){ const tmp = from; from = to; to = tmp; $('dFrom').value = from; $('dTo').value = to; }
-  $('dailySummary').innerHTML = '<div class="sbox"><div class="slbl">Đang tải...</div></div>';
-  $('dailyContent').classList.add('hide');
+  const rangeKey = from + '|' + to;
+
+  // 1) Hiện NGAY bản đã lưu (nếu đúng khoảng ngày này)
+  let cached = null;
+  try { cached = JSON.parse(localStorage.getItem(DAILYCACHE) || 'null'); } catch(e){}
+  const hasCache = cached && cached.key === rangeKey && cached.data;
+  if (hasCache){
+    renderDaily(cached.data.sx || [], cached.data.phe || []);
+    $('dailyStatus').textContent = '📥 Bản lưu lúc ' + (cached.time || '') + ' — đang cập nhật...';
+  } else {
+    $('dailySummary').innerHTML = '<div class="sbox"><div class="slbl">Đang tải...</div></div>';
+    $('dailyContent').classList.add('hide');
+    $('dailyStatus').textContent = '';
+  }
+
+  // 2) Tải bản mới chạy ngầm
   const cbName = '__tksx_daily_' + Date.now();
   const s = document.createElement('script');
   let done = false;
@@ -911,11 +958,23 @@ function loadDaily(){
     done = true;
     cleanup();
     renderDaily(data.sx || [], data.phe || []);
+    try { localStorage.setItem(DAILYCACHE, JSON.stringify({ key: rangeKey, time: timeStr(), data: data })); } catch(e){}
+    $('dailyStatus').textContent = '✓ Đã cập nhật lúc ' + timeStr();
   };
-  s.onerror = function(){ cleanup(); $('dailySummary').innerHTML=''; toast('⚠ Không tải được báo cáo ngày'); };
+  s.onerror = function(){
+    cleanup();
+    if (hasCache) $('dailyStatus').textContent = '⚠ Không cập nhật được — đang xem bản lưu lúc ' + (cached.time || '');
+    else { $('dailySummary').innerHTML=''; toast('⚠ Không tải được báo cáo ngày'); }
+  };
   s.src = sheetUrl + '?action=daily&from=' + from + '&to=' + to + '&callback=' + cbName + '&t=' + Date.now();
   document.body.appendChild(s);
-  setTimeout(function(){ if(!done){ cleanup(); $('dailySummary').innerHTML=''; toast('⚠ Quá thời gian tải báo cáo'); } }, 15000);
+  setTimeout(function(){
+    if(!done){
+      cleanup();
+      if (hasCache) $('dailyStatus').textContent = '⚠ Mạng chậm — đang xem bản lưu lúc ' + (cached.time || '');
+      else { $('dailySummary').innerHTML=''; toast('⚠ Quá thời gian tải báo cáo'); }
+    }
+  }, 15000);
   function cleanup(){ try{ delete window[cbName]; }catch(e){ window[cbName]=undefined; } if(s.parentNode) s.parentNode.removeChild(s); }
 }
 
