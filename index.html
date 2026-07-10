@@ -77,6 +77,8 @@
   .dash-table .neg { color: #dc2626; font-weight: 700; }
   .dash-table .pos { color: #166534; }
   .dash-scroll { max-height: 65vh; overflow-y: auto; }
+  .dash-table .kh { max-width: 62px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; word-break: normal; }
+  .lsx-hist { color: #0f766e; font-weight: 600; text-decoration: underline; }
   .tag { display: inline-block; font-size: 11px; padding: 2px 7px; border-radius: 6px; font-weight: 600; }
   .tag-nb { background: #dbeafe; color: #1e40af; }
   .tag-kh { background: #fce7f3; color: #9d174d; }
@@ -203,7 +205,7 @@
   <div id="dashNote" style="font-size:12px;color:#98a2b3;margin:0 0 6px"></div>
   <div class="dash-scroll">
     <table class="dash-table">
-      <thead><tr><th>LSX</th><th>KH</th><th>KLYC</th><th>Tổng SX</th><th>Còn lại</th><th>SL</th></tr></thead>
+      <thead><tr><th>LSX</th><th class="kh">KH</th><th>KLYC</th><th>Đã SX</th><th>#</th><th>SL</th></tr></thead>
       <tbody id="dashBody"></tbody>
     </table>
   </div>
@@ -308,6 +310,21 @@
 </div>
 
 <div class="toast" id="toast"></div>
+
+<!-- Modal lịch sử SX của 1 LSX -->
+<div class="modal" id="histModal">
+  <div class="box">
+    <h3 id="histTitle">🕘 Lịch sử sản xuất</h3>
+    <div class="status" id="histInfo" style="text-align:left;margin:0 0 8px"></div>
+    <div style="max-height:55vh;overflow-y:auto">
+      <table class="dash-table">
+        <thead><tr><th>Thời gian</th><th>Tổ</th><th>CN</th><th>Máy</th><th>KQ SX</th></tr></thead>
+        <tbody id="histBody"></tbody>
+      </table>
+    </div>
+    <button class="b-back full" id="histClose" style="margin-top:10px">Đóng</button>
+  </div>
+</div>
 
 <!-- Modal PIN -->
 <div class="modal" id="pinModal">
@@ -910,6 +927,8 @@ function openDashboard(){
   }
 }
 
+let dashPendingOnly = false; // đang bật chế độ "chỉ xem LSX còn thiếu"?
+
 function renderDashboard(){
   const q = ($('dashSearch').value || '').toLowerCase().trim();
   // Lọc trên TOÀN BỘ dữ liệu trong máy — gõ từng số là lọc ngay, không chờ mạng
@@ -926,16 +945,24 @@ function renderDashboard(){
   $('dashSummary').innerHTML =
     '<div class="sbox"><div class="snum">' + totalLSX + '</div><div class="slbl">Tổng LSX</div></div>' +
     '<div class="sbox"><div class="snum">' + done + '</div><div class="slbl">Đã đủ</div></div>' +
-    '<div class="sbox"><div class="snum">' + pending + '</div><div class="slbl">Còn thiếu</div></div>';
+    '<div class="sbox" id="boxPending" style="cursor:pointer' + (dashPendingOnly ? ';background:#fef3c7;border-color:#fcd34d' : '') + '">' +
+      '<div class="snum">' + pending + '</div><div class="slbl">Còn thiếu' + (dashPendingOnly ? ' ✓' : ' 👆') + '</div></div>';
+  // Bấm ô "Còn thiếu" -> bật/tắt chế độ chỉ xem LSX còn thiếu
+  document.getElementById('boxPending').onclick = () => { dashPendingOnly = !dashPendingOnly; renderDashboard(); };
 
-  // Chỉ vẽ tối đa 300 dòng cho nhẹ màn hình (tìm kiếm vẫn lọc trên toàn bộ Master)
-  const shown = filtered.slice(0, 300);
-  if (!q && filtered.length > shown.length) {
-    $('dashNote').textContent = '📄 Đang hiển thị 300 LSX gần nhất (tổng ' + filtered.length + ' LSX) — tìm kiếm sẽ tự lọc trên toàn bộ Master';
-  } else if (filtered.length > shown.length) {
-    $('dashNote').textContent = '📄 Hiển thị ' + shown.length + ' / ' + filtered.length + ' kết quả — gõ thêm số để thu hẹp';
+  // Chế độ "còn thiếu": hiện TẤT CẢ LSX thiếu (không giới hạn 300)
+  let view = filtered;
+  if (dashPendingOnly) view = filtered.filter(r => (Number(r.conLai) || 0) > 0);
+  const shown = dashPendingOnly ? view : view.slice(0, 300);
+
+  if (dashPendingOnly) {
+    $('dashNote').textContent = '📄 Đang xem ' + view.length + ' LSX còn thiếu — bấm lại ô "Còn thiếu" để bỏ lọc';
+  } else if (!q && view.length > shown.length) {
+    $('dashNote').textContent = '📄 Đang hiển thị 300 LSX gần nhất (tổng ' + view.length + ' LSX) — tìm kiếm sẽ tự lọc trên toàn bộ Master';
+  } else if (view.length > shown.length) {
+    $('dashNote').textContent = '📄 Hiển thị ' + shown.length + ' / ' + view.length + ' kết quả — gõ thêm số để thu hẹp';
   } else {
-    $('dashNote').textContent = filtered.length ? '📄 ' + filtered.length + ' kết quả — mới nhất trên đầu' : '';
+    $('dashNote').textContent = view.length ? '📄 ' + view.length + ' kết quả — mới nhất trên đầu' : '';
   }
 
   // Table
@@ -952,20 +979,56 @@ function renderDashboard(){
     const conLai = rnd2(r.conLai);
     const isWarn = conLai < 0;
     if (isWarn) tr.className = 'warn';
-    // LSX: nếu có trong sheet đơn hàng -> link mở đúng dòng đơn hàng
-    let lsxCell = esc(r.lsx);
-    if (r.khRow && khUrl) {
-      const href = khUrl + '&range=' + khCol + r.khRow;
-      lsxCell = '<a href="' + href + '" target="_blank" rel="noopener" style="color:#0f766e;font-weight:600">' + esc(r.lsx) + ' ↗</a>';
-    }
+    // Bấm LSX -> mở lịch sử SX của LSX đó (từ bảng data)
+    const lsxCell = '<a href="#" class="lsx-hist" data-lsx="' + esc(r.lsx) + '">' + esc(r.lsx) + ' ▸</a>';
     tr.innerHTML =
       '<td>' + lsxCell + '</td>' +
-      '<td>' + esc(r.kh || '') + '</td>' +
+      '<td class="kh">' + esc(r.kh || '') + '</td>' +
       '<td>' + rnd2(r.klyc) + '</td>' +
       '<td>' + rnd2(r.tongSX) + '</td>' +
       '<td class="' + (conLai < 0 ? 'neg' : conLai > 0 ? 'pos' : '') + '">' + conLai + '</td>' +
       '<td>' + esc(r.soLanSX) + '</td>';
     tb.appendChild(tr);
+  });
+}
+
+// ---------- Lịch sử SX của 1 LSX ----------
+$('dashBody').addEventListener('click', e => {
+  const a = e.target.closest('.lsx-hist');
+  if (!a) return;
+  e.preventDefault();
+  openHistory(a.dataset.lsx);
+});
+$('histClose').onclick = () => $('histModal').classList.remove('show');
+
+function openHistory(lsx){
+  $('histTitle').textContent = '🕘 Lịch sử SX — ' + lsx;
+  $('histBody').innerHTML = '';
+  $('histInfo').textContent = '⏳ Đang tải...';
+  $('histModal').classList.add('show');
+  jsonp(sheetUrl + '?action=history&lsx=' + encodeURIComponent(lsx), 30000, function(data){
+    const rows = data.rows || [];
+    if (!rows.length){
+      $('histInfo').textContent = 'Chưa có lần SX nào của LSX này trong bảng data';
+      return;
+    }
+    let sum = 0;
+    const tb = $('histBody');
+    rows.forEach(r => {
+      sum += Number(r.ketqua) || 0;
+      const tr = document.createElement('tr');
+      if (r.canhbao) tr.className = 'warn';
+      tr.innerHTML =
+        '<td>' + esc(r.time) + '</td>' +
+        '<td>' + esc(r.loai) + '</td>' +
+        '<td>' + esc(r.cn) + '</td>' +
+        '<td>' + esc(r.may) + '</td>' +
+        '<td><b>' + esc(r.ketqua) + '</b></td>';
+      tb.appendChild(tr);
+    });
+    $('histInfo').textContent = rows.length + ' lần SX · Tổng ' + (Math.round(sum * 100) / 100) + ' kg';
+  }, function(){
+    $('histInfo').textContent = '⚠ Không tải được lịch sử — kiểm tra mạng rồi thử lại';
   });
 }
 
