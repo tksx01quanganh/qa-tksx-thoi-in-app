@@ -98,6 +98,7 @@
     <button class="b-in big full" data-mode="In">🖨️<br>In</button>
   </div>
   <button class="b-dash full" id="btnDashboard" style="margin-top:12px">📊 Kiểm tra kết quả</button>
+  <button class="b-dash full" id="btnDaily" style="margin-top:8px;background:#0d9488">📅 Sản lượng theo ngày</button>
   <button class="b-phe full" id="btnPhe" style="margin-top:8px">🗑️ Nhập Phế</button>
   <button class="b-go full" id="btnChuyen" style="margin-top:8px">📦 Chuyển cuộn sang Cắt</button>
 </div>
@@ -179,15 +180,41 @@
     <button data-f="Thổi">💨 Thổi</button>
     <button data-f="In">🖨️ In</button>
   </div>
-  <input class="search" id="dashSearch" placeholder="🔎 Tìm LSX..." autocomplete="off">
+  <input class="search" id="dashSearch" placeholder="🔎 Tìm LSX hoặc khách hàng..." autocomplete="off">
   <button class="b-back full" id="dashBack" style="margin:8px 0">← Về trang chính</button>
   <div class="dash-scroll">
     <table class="dash-table">
-      <thead><tr><th>LSX</th><th>KLYC</th><th>Tổng SX</th><th>Còn lại</th><th>SL</th></tr></thead>
+      <thead><tr><th>LSX</th><th>KH</th><th>KLYC</th><th>Tổng SX</th><th>Còn lại</th><th>SL</th></tr></thead>
       <tbody id="dashBody"></tbody>
     </table>
   </div>
   <div class="empty hide" id="dashEmpty">Chưa có dữ liệu Master</div>
+</div>
+
+<!-- BƯỚC 9: Sản lượng theo ngày -->
+<div class="card step hide" id="step9">
+  <p class="steptitle">📅 Sản lượng theo ngày</p>
+  <div class="row">
+    <div style="flex:1"><label style="margin-top:0">Từ ngày</label><input class="fld" type="date" id="dFrom"></div>
+    <div style="flex:1"><label style="margin-top:0">Đến ngày</label><input class="fld" type="date" id="dTo"></div>
+  </div>
+  <button class="b-go full" id="btnDailyLoad">🔍 Xem báo cáo</button>
+  <button class="b-back full" id="dailyBack" style="margin:8px 0">← Về trang chính</button>
+  <div class="dash-summary" id="dailySummary"></div>
+  <div id="dailyContent" class="hide">
+    <p class="steptitle" style="margin:12px 0 6px">🏭 Sản lượng theo máy</p>
+    <table class="dash-table">
+      <thead><tr><th>Tổ</th><th>Máy</th><th>Sản lượng (kg)</th><th>Số cuộn</th></tr></thead>
+      <tbody id="dailySxBody"></tbody>
+    </table>
+    <div class="empty hide" id="dailySxEmpty">Không có dữ liệu sản xuất trong khoảng ngày này</div>
+    <p class="steptitle" style="margin:16px 0 6px">🗑️ Phế theo máy</p>
+    <table class="dash-table">
+      <thead><tr><th>Tổ</th><th>Máy</th><th>Phế trơn</th><th>Phế màu</th><th>Tổng</th></tr></thead>
+      <tbody id="dailyPheBody"></tbody>
+    </table>
+    <div class="empty hide" id="dailyPheEmpty">Không có ghi nhận phế trong khoảng ngày này</div>
+  </div>
 </div>
 
 <!-- BƯỚC 6: Nhập Phế — chọn công đoạn -->
@@ -294,6 +321,9 @@ let sentRolls = 0;       // số cuộn đã gửi trong phiên
 // Dashboard data
 let dashData = [];       // dữ liệu Master từ Sheet
 let dashFilter = 'all';  // filter hiện tại
+let khMap = {};          // lsx -> {kh, row} từ sheet đơn hàng
+let khUrl = '';          // link tab đơn hàng (đã kèm #gid=)
+let khCol = 'A';         // cột chứa LSX trong sheet đơn hàng
 let pendingAction = null; // hành động chờ sau khi nhập PIN
 let appMode = 'sx';      // 'sx' = sản xuất, 'phe' = nhập phế
 // Chuyển cuộn
@@ -783,6 +813,9 @@ function openDashboard(){
     done = true;
     cleanup();
     dashData = data.master || [];
+    khMap = data.khMap || {};
+    khUrl = data.khUrl || '';
+    khCol = data.khCol || 'A';
     renderDashboard();
   };
   s.onerror = function(){ cleanup(); toast('⚠ Không tải được dữ liệu Master'); };
@@ -792,11 +825,19 @@ function openDashboard(){
   function cleanup(){ try{ delete window[cbName]; }catch(e){ window[cbName]=undefined; } if(s.parentNode) s.parentNode.removeChild(s); }
 }
 
+// Tra thông tin KH của 1 dòng Master (ưu tiên mã gốc, fallback mã đầy đủ)
+function khInfoFor(r){
+  return khMap[('' + (r.lsxGoc || '')).trim()] || khMap[('' + (r.lsx || '')).trim()] || null;
+}
+
 function renderDashboard(){
   const q = ($('dashSearch').value || '').toLowerCase().trim();
   let filtered = dashData;
   if (dashFilter !== 'all') filtered = filtered.filter(r => r.loai === dashFilter);
-  if (q) filtered = filtered.filter(r => (r.lsx + ' ' + r.lsxGoc).toLowerCase().indexOf(q) !== -1);
+  if (q) filtered = filtered.filter(r => {
+    const info = khInfoFor(r);
+    return (r.lsx + ' ' + r.lsxGoc + ' ' + (info ? info.kh : '')).toLowerCase().indexOf(q) !== -1;
+  });
 
   // Summary
   const totalLSX = filtered.length;
@@ -822,14 +863,102 @@ function renderDashboard(){
     const conLai = Number(r.conLai) || 0;
     const isWarn = conLai < 0;
     if (isWarn) tr.className = 'warn';
+    const info = khInfoFor(r);
+    // LSX: nếu có trong sheet đơn hàng -> link mở đúng dòng đơn hàng
+    let lsxCell = esc(r.lsx);
+    if (info && khUrl) {
+      const href = khUrl + '&range=' + khCol + info.row;
+      lsxCell = '<a href="' + href + '" target="_blank" rel="noopener" style="color:#0f766e;font-weight:600">' + esc(r.lsx) + ' ↗</a>';
+    }
     tr.innerHTML =
-      '<td>' + esc(r.lsx) + '</td>' +
+      '<td>' + lsxCell + '</td>' +
+      '<td>' + esc(info ? info.kh : '') + '</td>' +
       '<td>' + esc(r.klyc) + '</td>' +
       '<td>' + esc(r.tongSX) + '</td>' +
       '<td class="' + (conLai < 0 ? 'neg' : conLai > 0 ? 'pos' : '') + '">' + conLai + '</td>' +
       '<td>' + esc(r.soLanSX) + '</td>';
     tb.appendChild(tr);
   });
+}
+
+// ---------- Sản lượng theo ngày ----------
+function todayISO(){
+  const d = new Date(), p = n => String(n).padStart(2,'0');
+  return d.getFullYear() + '-' + p(d.getMonth()+1) + '-' + p(d.getDate());
+}
+$('btnDaily').onclick = () => {
+  show('step9');
+  $('crumbs').innerHTML = '📅 <b>Sản lượng theo ngày</b>';
+  const t = todayISO();
+  if (!$('dFrom').value) $('dFrom').value = t;
+  if (!$('dTo').value) $('dTo').value = t;
+  loadDaily();
+};
+$('btnDailyLoad').onclick = () => loadDaily();
+$('dailyBack').onclick = () => { $('crumbs').innerHTML = ''; show('step1'); };
+
+function loadDaily(){
+  if (!sheetUrl){ toast('Chưa có link Sheet'); return; }
+  let from = $('dFrom').value || todayISO();
+  let to = $('dTo').value || todayISO();
+  if (from > to){ const tmp = from; from = to; to = tmp; $('dFrom').value = from; $('dTo').value = to; }
+  $('dailySummary').innerHTML = '<div class="sbox"><div class="slbl">Đang tải...</div></div>';
+  $('dailyContent').classList.add('hide');
+  const cbName = '__tksx_daily_' + Date.now();
+  const s = document.createElement('script');
+  let done = false;
+  window[cbName] = function(data){
+    done = true;
+    cleanup();
+    renderDaily(data.sx || [], data.phe || []);
+  };
+  s.onerror = function(){ cleanup(); $('dailySummary').innerHTML=''; toast('⚠ Không tải được báo cáo ngày'); };
+  s.src = sheetUrl + '?action=daily&from=' + from + '&to=' + to + '&callback=' + cbName + '&t=' + Date.now();
+  document.body.appendChild(s);
+  setTimeout(function(){ if(!done){ cleanup(); $('dailySummary').innerHTML=''; toast('⚠ Quá thời gian tải báo cáo'); } }, 15000);
+  function cleanup(){ try{ delete window[cbName]; }catch(e){ window[cbName]=undefined; } if(s.parentNode) s.parentNode.removeChild(s); }
+}
+
+function renderDaily(sx, phe){
+  const rnd = n => Math.round(n * 100) / 100;
+  // Summary theo tổ
+  let tongThoi = 0, tongIn = 0, tongPhe = 0;
+  sx.forEach(r => { if (r.loai === 'Thổi') tongThoi += Number(r.tong)||0; else if (r.loai === 'In') tongIn += Number(r.tong)||0; });
+  phe.forEach(r => { tongPhe += (Number(r.tron)||0) + (Number(r.mau)||0); });
+  $('dailySummary').innerHTML =
+    '<div class="sbox"><div class="snum">' + rnd(tongThoi) + '</div><div class="slbl">💨 Thổi (kg)</div></div>' +
+    '<div class="sbox"><div class="snum">' + rnd(tongIn) + '</div><div class="slbl">🖨️ In (kg)</div></div>' +
+    '<div class="sbox"><div class="snum" style="color:#dc2626">' + rnd(tongPhe) + '</div><div class="slbl">🗑️ Phế (kg)</div></div>';
+
+  // Bảng SX theo máy
+  const sxTb = $('dailySxBody'); sxTb.innerHTML = '';
+  $('dailySxEmpty').classList.toggle('hide', sx.length > 0);
+  sx.forEach(r => {
+    const tr = document.createElement('tr');
+    tr.innerHTML =
+      '<td>' + (r.loai === 'Thổi' ? '💨' : '🖨️') + ' ' + esc(r.loai) + '</td>' +
+      '<td>' + esc(r.may) + '</td>' +
+      '<td><b>' + esc(r.tong) + '</b></td>' +
+      '<td>' + esc(r.soCuon) + '</td>';
+    sxTb.appendChild(tr);
+  });
+
+  // Bảng Phế theo máy
+  const pheTb = $('dailyPheBody'); pheTb.innerHTML = '';
+  $('dailyPheEmpty').classList.toggle('hide', phe.length > 0);
+  phe.forEach(r => {
+    const tr = document.createElement('tr');
+    const tong = rnd((Number(r.tron)||0) + (Number(r.mau)||0));
+    tr.innerHTML =
+      '<td>' + (r.loai === 'Thổi' ? '💨' : '🖨️') + ' ' + esc(r.loai) + '</td>' +
+      '<td>' + esc(r.may) + '</td>' +
+      '<td>' + esc(r.tron) + '</td>' +
+      '<td>' + esc(r.mau) + '</td>' +
+      '<td><b>' + tong + '</b></td>';
+    pheTb.appendChild(tr);
+  });
+
+  $('dailyContent').classList.remove('hide');
 }
 
 // Dashboard filter buttons
