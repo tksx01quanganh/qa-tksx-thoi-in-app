@@ -61,11 +61,11 @@
   .linkbtn { background: none; color: #0f766e; text-decoration: underline; font-size: 13px; padding: 0; width: auto; font-weight: 600; }
   .qbar { background: #fef3c7; border: 1px solid #fcd34d; color: #92400e; border-radius: 10px; padding: 9px 12px; font-size: 13px; font-weight: 600; margin: 0 2px 10px; }
   .qbar.ok { background: #dcfce7; border-color: #86efac; color: #166534; }
-  /* Hàng nút điều hướng: ← quay lại | 🏠 về trang chính */
-  .navrow { display: flex; gap: 10px; margin-top: 10px; }
-  .navrow button { flex: 1; padding: 12px; font-size: 22px; line-height: 1; }
-  .navrow .nav-back { background: #6b7280; }
-  .navrow .nav-home { background: #0f766e; }
+  /* Hàng nút điều hướng trên cùng: ← quay lại | 🏠 về trang chính */
+  .navrow { display: flex; gap: 8px; margin: 0 0 10px; }
+  .navrow button { flex: 1; height: 42px; padding: 0; line-height: 1; }
+  .navrow .nav-back { background: #6b7280; font-size: 30px; }
+  .navrow .nav-home { background: #0f766e; font-size: 21px; }
   /* Dashboard styles */
   .dash-filter { display: flex; gap: 6px; margin-bottom: 10px; flex-wrap: wrap; }
   .dash-filter button { padding: 8px 14px; font-size: 13px; border-radius: 8px; background: #e5e7eb; color: #374151; }
@@ -110,28 +110,32 @@
 
 <!-- BƯỚC 2: Công nhân -->
 <div class="card step hide" id="step2">
-  <p class="steptitle">Bước 2 — Chọn công nhân</p>
-  <input class="search" id="cnSearch" placeholder="🔎 Tìm mã hoặc tên..." autocomplete="off">
-  <div class="list" id="cnList"></div>
   <div class="navrow">
     <button class="nav-back" id="cnBack" title="Quay lại">←</button>
     <button class="nav-home" id="cnHome" title="Về trang chính">🏠</button>
   </div>
+  <p class="steptitle">Bước 2 — Chọn công nhân</p>
+  <input class="search" id="cnSearch" placeholder="🔎 Tìm mã hoặc tên..." autocomplete="off">
+  <div class="list" id="cnList"></div>
 </div>
 
 <!-- BƯỚC 3: Máy -->
 <div class="card step hide" id="step3">
-  <p class="steptitle">Bước 3 — Chọn máy</p>
-  <input class="search" id="mySearch" placeholder="🔎 Tìm mã hoặc tên..." autocomplete="off">
-  <div class="list" id="myList"></div>
   <div class="navrow">
     <button class="nav-back" id="myBack" title="Quay lại">←</button>
     <button class="nav-home" id="myHome" title="Về trang chính">🏠</button>
   </div>
+  <p class="steptitle">Bước 3 — Chọn máy</p>
+  <input class="search" id="mySearch" placeholder="🔎 Tìm mã hoặc tên..." autocomplete="off">
+  <div class="list" id="myList"></div>
 </div>
 
 <!-- BƯỚC 4: Quét nhiều QR / cuộn -->
 <div class="card step hide" id="step4">
+  <div class="navrow">
+    <button class="nav-back" id="step4Back" title="Đổi CN/Máy">←</button>
+    <button class="nav-home" id="step4Home" title="Về trang chính">🏠</button>
+  </div>
   <div class="ctx" id="ctx"></div>
 
   <!-- PHA A: Quét QR vào cuộn -->
@@ -157,10 +161,6 @@
     <div class="empty" id="batchEmpty">Chưa quét QR nào cho cuộn này</div>
 
     <button class="b-send full" id="btnStopScan" style="margin-top:12px">⏹ Dừng scan → nhập khối lượng cuộn</button>
-    <div class="navrow">
-      <button class="nav-back" id="step4Back" title="Đổi CN/Máy">←</button>
-      <button class="nav-home" id="step4Home" title="Về trang chính">🏠</button>
-    </div>
   </div>
 
   <!-- PHA B: Nhập khối lượng cuộn -->
@@ -187,6 +187,10 @@
 
 <!-- BƯỚC 5: Dashboard kiểm tra kết quả -->
 <div class="card step hide" id="step5">
+  <div class="navrow">
+    <button class="nav-back" id="dashBack" title="Quay lại">←</button>
+    <button class="nav-home" id="dashHome" title="Về trang chính">🏠</button>
+  </div>
   <p class="steptitle">📊 Kiểm tra kết quả sản xuất</p>
   <div class="dash-summary" id="dashSummary"></div>
   <div class="dash-filter" id="dashFilter">
@@ -195,10 +199,6 @@
     <button data-f="In">🖨️ In</button>
   </div>
   <input class="search" id="dashSearch" placeholder="🔎 Tìm LSX hoặc khách hàng..." autocomplete="off">
-  <div class="navrow" style="margin:0 0 8px">
-    <button class="nav-back" id="dashBack" title="Quay lại">←</button>
-    <button class="nav-home" id="dashHome" title="Về trang chính">🏠</button>
-  </div>
   <div class="status" id="dashStatus" style="text-align:left;margin:0 0 6px"></div>
   <div class="dash-scroll">
     <table class="dash-table">
@@ -211,16 +211,16 @@
 
 <!-- BƯỚC 9: Sản lượng theo ngày -->
 <div class="card step hide" id="step9">
+  <div class="navrow">
+    <button class="nav-back" id="dailyBack" title="Quay lại">←</button>
+    <button class="nav-home" id="dailyHome" title="Về trang chính">🏠</button>
+  </div>
   <p class="steptitle">📅 Sản lượng theo ngày</p>
   <div class="row">
     <div style="flex:1"><label style="margin-top:0">Từ ngày</label><input class="fld" type="date" id="dFrom"></div>
     <div style="flex:1"><label style="margin-top:0">Đến ngày</label><input class="fld" type="date" id="dTo"></div>
   </div>
   <button class="b-go full" id="btnDailyLoad">🔍 Xem báo cáo</button>
-  <div class="navrow" style="margin:0 0 8px">
-    <button class="nav-back" id="dailyBack" title="Quay lại">←</button>
-    <button class="nav-home" id="dailyHome" title="Về trang chính">🏠</button>
-  </div>
   <div class="status" id="dailyStatus" style="text-align:left;margin:0 0 6px"></div>
   <div class="dash-filter" id="dailyFilter">
     <button class="active" data-df="all">Tất cả</button>
@@ -246,19 +246,23 @@
 
 <!-- BƯỚC 6: Nhập Phế — chọn công đoạn -->
 <div class="card step hide" id="step6">
+  <div class="navrow">
+    <button class="nav-back" id="pheBack1" title="Quay lại">←</button>
+    <button class="nav-home" id="pheHome1" title="Về trang chính">🏠</button>
+  </div>
   <p class="steptitle">🗑️ Nhập Phế — Chọn công đoạn</p>
   <div class="row">
     <button class="b-thoi big full" data-phe-mode="Thổi">💨<br>Thổi</button>
     <button class="b-in big full" data-phe-mode="In">🖨️<br>In</button>
   </div>
-  <div class="navrow">
-    <button class="nav-back" id="pheBack1" title="Quay lại">←</button>
-    <button class="nav-home" id="pheHome1" title="Về trang chính">🏠</button>
-  </div>
 </div>
 
 <!-- BƯỚC 7: Nhập Phế — form nhập -->
 <div class="card step hide" id="step7">
+  <div class="navrow">
+    <button class="nav-back" id="pheBack3" title="Đổi CN/Máy">←</button>
+    <button class="nav-home" id="pheHome3" title="Về trang chính">🏠</button>
+  </div>
   <div class="ctx" id="pheCtx"></div>
   <p class="steptitle">Nhập khối lượng phế (kg)</p>
   <label>Phế trơn (kg)</label>
@@ -266,14 +270,14 @@
   <label>Phế màu (kg)</label>
   <input class="fld" id="pheMau" placeholder="0" autocomplete="off" inputmode="decimal" enterkeyhint="done">
   <button class="b-send full" id="btnPheSend" style="margin-top:12px">📤 Gửi phế</button>
-  <div class="navrow">
-    <button class="nav-back" id="pheBack3" title="Đổi CN/Máy">←</button>
-    <button class="nav-home" id="pheHome3" title="Về trang chính">🏠</button>
-  </div>
 </div>
 
 <!-- BƯỚC 8: Chuyển cuộn sang Cắt -->
 <div class="card step hide" id="step8">
+  <div class="navrow">
+    <button class="nav-back" id="btnChuyenBack" title="Quay lại">←</button>
+    <button class="nav-home" id="chuyenHome" title="Về trang chính">🏠</button>
+  </div>
   <p class="steptitle">📦 Chuyển cuộn sang Cắt</p>
 
   <!-- Scan phase -->
@@ -299,10 +303,6 @@
     <div class="empty" id="chuyenEmpty">Chưa quét QR nào</div>
 
     <button class="b-send full" id="btnChuyenSend" style="margin-top:12px">📤 Xác nhận chuyển cuộn</button>
-    <div class="navrow">
-      <button class="nav-back" id="btnChuyenBack" title="Quay lại">←</button>
-      <button class="nav-home" id="chuyenHome" title="Về trang chính">🏠</button>
-    </div>
   </div>
 </div>
 
@@ -380,7 +380,14 @@ const genId = () => Date.now().toString(36) + '-' + Math.random().toString(36).s
 function toast(m){ const t=$('toast'); t.textContent=m; t.classList.add('show'); clearTimeout(t._t); t._t=setTimeout(()=>t.classList.remove('show'),2400); }
 function nowStr(){ const d=new Date(),p=n=>String(n).padStart(2,'0'); return `${p(d.getDate())}/${p(d.getMonth()+1)}/${d.getFullYear()} ${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`; }
 
-function show(id){ document.querySelectorAll('.step').forEach(e=>e.classList.add('hide')); $(id).classList.remove('hide'); }
+function show(id){
+  document.querySelectorAll('.step').forEach(e=>e.classList.add('hide'));
+  $(id).classList.remove('hide');
+  // Màn hình con (level 2+): ẩn tiêu đề app + dòng breadcrumbs để tiết kiệm không gian
+  const isHome = id === 'step1';
+  document.querySelector('header').style.display = isHome ? 'flex' : 'none';
+  $('crumbs').style.display = isHome ? 'block' : 'none';
+}
 function updateCrumbs(){
   let s = '';
   if (sel.mode) s += 'Công đoạn: <b>' + sel.mode + '</b>';
