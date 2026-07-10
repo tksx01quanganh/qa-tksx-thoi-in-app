@@ -854,7 +854,7 @@ function openDashboard(){
       if (hasCache) $('dashStatus').textContent = '⚠ Mạng chậm — đang xem bản lưu lúc ' + (cached.time || '');
       else toast('⚠ Quá thời gian tải dữ liệu Master');
     }
-  }, 15000);
+  }, 30000);
   function cleanup(){ try{ delete window[cbName]; }catch(e){ window[cbName]=undefined; } if(s.parentNode) s.parentNode.removeChild(s); }
 }
 
@@ -974,7 +974,7 @@ function loadDaily(){
       if (hasCache) $('dailyStatus').textContent = '⚠ Mạng chậm — đang xem bản lưu lúc ' + (cached.time || '');
       else { $('dailySummary').innerHTML=''; toast('⚠ Quá thời gian tải báo cáo'); }
     }
-  }, 15000);
+  }, 30000);
   function cleanup(){ try{ delete window[cbName]; }catch(e){ window[cbName]=undefined; } if(s.parentNode) s.parentNode.removeChild(s); }
 }
 
