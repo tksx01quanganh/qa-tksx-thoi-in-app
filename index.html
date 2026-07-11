@@ -1,1638 +1,1511 @@
 <!DOCTYPE html>
 <html lang="vi">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<meta name="theme-color" content="#0f766e">
-<link rel="manifest" href="manifest.json">
-<link rel="apple-touch-icon" href="icon-192.png">
-<title>TKSX</title>
-<!-- v2: 2 nhóm chức năng, Thống kê Sản lượng Tổ-Ngày-Máy, Thống kê chuyển cuộn -->
-
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<meta name="theme-color" content="#0f766e" />
+<link rel="manifest" href="manifest.json" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="apple-mobile-web-app-title" content="QA-P.ERP" />
+<link rel="apple-touch-icon" href="icon-192.png" />
+<title>QA-P.ERP</title>
 <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
 <style>
-  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-  html, body { margin: 0; }
-  body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #eef1f5; color: #15181d; max-width: 600px; margin: 0 auto; padding: 10px 10px 90px; }
-  header { display: flex; align-items: center; justify-content: space-between; margin: 4px 2px 10px; }
-  header h1 { font-size: 18px; margin: 0; color: #0f766e; }
-  .gear { background: #fff; border: 1px solid #d8dde6; border-radius: 10px; width: 40px; height: 40px; font-size: 18px; cursor: pointer; }
-  .card { background: #fff; border-radius: 14px; padding: 16px; margin-bottom: 12px; box-shadow: 0 1px 4px rgba(0,0,0,.07); }
-  button { border: none; border-radius: 12px; font-size: 16px; font-weight: 600; cursor: pointer; color: #fff; transition: transform .05s; }
-  button:active { transform: scale(.97); }
-  .full { width: 100%; padding: 15px; }
-  .row { display: flex; gap: 10px; }
-  .crumbs { font-size: 13px; color: #5a6473; margin: 0 2px 10px; min-height: 18px; }
-  .crumbs b { color: #0f766e; }
-  .steptitle { font-size: 16px; font-weight: 700; margin: 0 0 14px; }
-  .big { padding: 26px 10px; font-size: 22px; }
-  .b-thoi { background: #0ea5e9; }
-  .b-in { background: #f59e0b; }
-  .b-back { background: #6b7280; }
-  .b-go { background: #0f766e; }
-  .b-add { background: #059669; }
-  .b-send { background: #7c3aed; }
-  .b-manual { background: #0891b2; }
-  .b-dash { background: #6366f1; }
-  .b-phe { background: #dc2626; }
-  .search { width: 100%; padding: 12px; font-size: 16px; border: 1px solid #cfd6e0; border-radius: 10px; margin-bottom: 10px; }
-  .list { max-height: 52vh; overflow-y: auto; }
-  .item { width: 100%; text-align: left; background: #f3f6fa; color: #15181d; border: 1px solid #e3e8ef; border-radius: 10px; padding: 13px; margin-bottom: 8px; font-weight: 600; }
-  .item .code { color: #0f766e; font-weight: 700; margin-right: 6px; }
-  #reader { width: 100%; border-radius: 12px; overflow: hidden; background: #000; min-height: 60px; }
-  .status { text-align: center; font-size: 13px; color: #5a6473; margin: 10px 0 4px; min-height: 18px; }
-  label { display: block; font-size: 13px; color: #5a6473; margin: 8px 0 4px; }
-  input.fld { width: 100%; padding: 13px; font-size: 16px; border: 1px solid #cfd6e0; border-radius: 10px; margin-bottom: 10px; }
-  .lsxbox { background: #ecfeff; border: 1px solid #a5f3fc; border-radius: 10px; padding: 10px; font-weight: 700; color: #0e7490; word-break: break-all; margin-bottom: 8px; }
-  table { width: 100%; border-collapse: collapse; font-size: 13px; }
-  th, td { padding: 8px 6px; border-bottom: 1px solid #eef0f3; text-align: left; word-break: break-all; vertical-align: top; }
-  th { background: #f7f9fc; font-weight: 600; color: #5a6473; }
-  td.del { color: #dc2626; text-align: center; cursor: pointer; font-weight: 700; width: 26px; }
-  .empty { text-align: center; color: #98a2b3; padding: 12px; font-size: 14px; }
-  .sendbar { position: fixed; left: 0; right: 0; bottom: 0; max-width: 600px; margin: 0 auto; padding: 10px; background: linear-gradient(transparent, #eef1f5 24%); }
-  .toast { position: fixed; left: 50%; bottom: 84px; transform: translateX(-50%); background: #15181d; color: #fff; padding: 12px 18px; border-radius: 24px; font-size: 14px; opacity: 0; transition: opacity .25s; pointer-events: none; z-index: 99; max-width: 92%; text-align: center; }
-  .toast.show { opacity: .96; }
-  .modal { position: fixed; inset: 0; background: rgba(0,0,0,.5); display: none; align-items: center; justify-content: center; padding: 16px; z-index: 100; }
-  .modal.show { display: flex; }
-  .modal .box { background: #fff; border-radius: 16px; padding: 18px; width: 100%; max-width: 460px; }
-  .modal h3 { margin: 0 0 10px; font-size: 17px; }
-  .modal p { font-size: 13px; color: #5a6473; margin: 0 0 12px; }
-  .hide { display: none; }
-  .ctx { background: #f0fdfa; border: 1px solid #99f6e4; border-radius: 10px; padding: 10px 12px; font-size: 13px; margin-bottom: 12px; line-height: 1.7; }
-  .ctx b { color: #0f766e; }
-  .linkbtn { background: none; color: #0f766e; text-decoration: underline; font-size: 13px; padding: 0; width: auto; font-weight: 600; }
-  .qbar { background: #fef3c7; border: 1px solid #fcd34d; color: #92400e; border-radius: 10px; padding: 9px 12px; font-size: 13px; font-weight: 600; margin: 0 2px 10px; }
-  .qbar.ok { background: #dcfce7; border-color: #86efac; color: #166534; }
-  /* Hàng nút điều hướng trên cùng: ← quay lại | 🏠 về trang chính */
-  .navrow { display: flex; gap: 8px; margin: 0 0 10px; }
-  .navrow button { flex: 1; height: 42px; padding: 0; line-height: 1; }
-  .navrow .nav-back { background: #6b7280; font-size: 30px; }
-  .navrow .nav-home { background: #0f766e; font-size: 21px; }
-  /* Dashboard styles */
-  .dash-filter { display: flex; gap: 6px; margin-bottom: 10px; flex-wrap: wrap; }
-  .dash-filter button { padding: 8px 14px; font-size: 13px; border-radius: 8px; background: #e5e7eb; color: #374151; }
-  .dash-filter button.active { background: #0f766e; color: #fff; }
-  .dash-table { width: 100%; border-collapse: collapse; font-size: 15px; }
-  .dash-table th { background: #f0fdfa; color: #0f766e; padding: 10px 6px; position: sticky; top: 0; z-index: 1; }
-  .dash-table td { padding: 9px 6px; border-bottom: 1px solid #eef0f3; }
-  .dash-table tr.warn { background: #fef3c7; }
-  .dash-table .neg { color: #dc2626; font-weight: 700; }
-  .dash-table .pos { color: #166534; }
-  .dash-scroll { max-height: 65vh; overflow-y: auto; }
-  .dash-table th.col-lsx { width: 78px; }
-  .dash-table .kh { word-break: break-word; }
-  .daterow { display: flex; align-items: center; gap: 6px; margin-bottom: 8px; }
-  .daterow .dlbl { font-size: 13px; color: #5a6473; flex: none; }
-  .daterow input.fld { margin-bottom: 0; padding: 9px 5px; font-size: 14px; min-width: 0; flex: 1; }
-  .lsx-hist { color: #0f766e; font-weight: 600; text-decoration: underline; }
-  .tag { display: inline-block; font-size: 11px; padding: 2px 7px; border-radius: 6px; font-weight: 600; }
-  .tag-nb { background: #dbeafe; color: #1e40af; }
-  .tag-kh { background: #fce7f3; color: #9d174d; }
-  .tag-goc { background: #dcfce7; color: #166534; }
-  .dash-summary { display: flex; gap: 8px; margin-bottom: 10px; flex-wrap: wrap; }
-  .dash-summary .sbox { flex: 1; min-width: 80px; background: #f0fdfa; border: 1px solid #99f6e4; border-radius: 10px; padding: 8px; text-align: center; }
-  .dash-summary .sbox .snum { font-size: 22px; font-weight: 700; color: #0f766e; }
-  .dash-summary .sbox .slbl { font-size: 13px; color: #5a6473; }
+:root{
+  --teal:#0f766e; --teal-d:#0b5b54; --green:#16a34a; --red:#dc2626;
+  --amber:#d97706; --gray:#64748b; --bg:#f1f5f9; --card:#fff;
+  --txt:#0f172a; --muted:#64748b; --border:#e2e8f0;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+html,body{margin:0;height:100%;}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;background:var(--bg);color:var(--txt);font-size:17px;line-height:1.4;}
+
+/* ── screens ─────────────────────────────────────── */
+.screen{display:none;min-height:100vh;flex-direction:column;}
+.screen.active{display:flex;}
+
+/* ── topbar ──────────────────────────────────────── */
+.topbar{background:var(--teal);color:#fff;padding:12px 14px;display:flex;align-items:center;justify-content:space-between;gap:8px;position:sticky;top:0;z-index:5;}
+.topbar .ttl{font-weight:700;font-size:16px;display:flex;align-items:center;gap:6px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.icon-btn{background:rgba(255,255,255,.2);border:0;color:#fff;border-radius:10px;padding:8px 12px;font-size:14px;font-weight:600;cursor:pointer;white-space:nowrap;}
+
+/* ── buttons ─────────────────────────────────────── */
+.btn{border:0;border-radius:12px;font-size:18px;font-weight:700;padding:16px 18px;cursor:pointer;width:100%;color:#fff;background:var(--teal);}
+.btn:active{transform:scale(.98);}
+.btn.lg{padding:20px;font-size:20px;}
+.btn.green{background:var(--green);}
+.btn.red{background:var(--red);}
+.btn.gray{background:var(--gray);}
+.btn.amber{background:var(--amber);}
+.btn.ghost{background:#fff;color:var(--teal);border:2px solid var(--teal);}
+.btn.small{width:auto;padding:8px 14px;font-size:14px;border-radius:10px;}
+.btn:disabled{opacity:.5;}
+
+/* ── picker screens (Login / Máy / CN) ──────────── */
+.picker-wrap{flex:1;overflow:auto;padding:16px;}
+.picker-sub{text-align:center;color:var(--muted);margin:0 0 10px;font-size:15px;}
+.search-box{width:100%;padding:13px;font-size:17px;border:2px solid var(--border);border-radius:12px;margin-bottom:10px;display:none;}
+.pick-list{display:flex;flex-direction:column;gap:10px;}
+.pick-btn{background:#fff;border:2px solid var(--border);border-radius:14px;padding:16px;text-align:left;cursor:pointer;width:100%;}
+.pick-btn:active{border-color:var(--teal);background:#ecfdf5;}
+.pick-btn .pb-code{font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:3px;}
+.pick-btn .pb-name{font-size:19px;font-weight:700;color:var(--txt);}
+.pick-btn .pb-note{font-size:13px;color:var(--amber);margin-top:2px;}
+.pick-status{text-align:center;color:var(--muted);margin-top:24px;font-size:15px;}
+
+/* ── scan screen ─────────────────────────────────── */
+.session{display:flex;gap:10px;padding:12px 14px;background:var(--card);border-bottom:1px solid var(--border);}
+.slot{flex:1;border-radius:12px;padding:10px 12px;border:2px solid var(--border);background:#f8fafc;}
+.slot.filled{border-color:var(--teal);background:#ecfdf5;}
+.slot .lbl{font-size:11px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.5px;}
+.slot .val{font-size:16px;font-weight:700;margin-top:3px;color:var(--txt);word-break:break-word;}
+.slot.filled .val{color:var(--teal-d);}
+.slot .val .code{display:block;font-size:11px;font-weight:600;color:var(--muted);margin-top:2px;}
+.switch-row{padding:6px 14px 8px;display:flex;justify-content:flex-end;background:var(--card);border-bottom:1px solid var(--border);}
+.counter{text-align:center;padding:10px;font-size:16px;font-weight:600;color:var(--teal-d);background:#ecfeff;}
+.counter b{font-size:22px;}
+.hint{padding:12px 16px;text-align:center;font-size:15px;font-weight:600;min-height:20px;}
+.hint.ok{color:var(--green);}.hint.err{color:var(--red);}.hint.info{color:var(--teal-d);}
+#reader{width:100%;background:#000;min-height:240px;}
+#reader video{width:100%!important;height:auto!important;display:block;}
+.controls{padding:14px;display:flex;flex-direction:column;gap:12px;margin-top:auto;}
+.row2{display:flex;gap:12px;}
+.row2 .btn{flex:1;}
+
+/* ── list screen ─────────────────────────────────── */
+.listWrap{flex:1;overflow:auto;padding:12px;}
+.sum-bar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;background:#fff;border:1px solid var(--border);border-radius:12px;padding:10px 12px;margin-bottom:10px;}
+.sum-total{font-size:15px;font-weight:700;color:var(--teal-d);margin-right:4px;}
+.sum-chip{font-size:13px;font-weight:600;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:20px;padding:4px 10px;color:#166534;}
+.rowCard{background:#fff;border:1px solid var(--border);border-radius:12px;padding:12px;margin-bottom:10px;display:flex;align-items:center;gap:10px;}
+.seq-badge{flex-shrink:0;width:36px;text-align:center;font-size:13px;font-weight:800;color:var(--teal-d);background:#e0f2fe;border-radius:8px;padding:4px 0;}
+.rowCard .info{min-width:0;flex:1;cursor:pointer;}
+.rowCard .info .top{font-weight:700;font-size:15px;}
+.rowCard .info .sub{font-size:13px;color:var(--muted);word-break:break-all;margin-top:2px;}
+.rowCard .info .note-line{font-size:13px;color:var(--amber);margin-top:2px;}
+.del-btn{flex-shrink:0;background:var(--red);border:0;color:#fff;border-radius:10px;padding:10px 13px;font-size:18px;cursor:pointer;}
+.del-btn:active{opacity:.8;}
+.empty{text-align:center;color:var(--muted);padding:40px 20px;}
+
+/* ── banners ─────────────────────────────────────── */
+.banner{padding:12px 16px;font-size:14px;font-weight:600;text-align:center;display:none;}
+.banner.show{display:block;}
+.banner.warn{background:#fef3c7;color:#92400e;}
+.banner.bad{background:#fee2e2;color:#991b1b;}
+.banner.good{background:#dcfce7;color:#166534;}
+
+/* ── modal / overlay ─────────────────────────────── */
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);display:none;align-items:flex-end;z-index:20;}
+.overlay.active{display:flex;}
+.sheet{background:#fff;width:100%;border-radius:20px 20px 0 0;padding:18px;max-height:88vh;overflow:auto;}
+.sheet h3{margin:0 0 12px;}
+.field{margin-bottom:14px;}
+.field label{display:block;font-size:13px;font-weight:700;color:var(--muted);margin-bottom:6px;text-transform:uppercase;}
+.field input{width:100%;padding:12px;font-size:17px;border:2px solid var(--border);border-radius:10px;}
+.manual-ctx{background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;padding:10px 12px;margin-bottom:14px;font-size:14px;font-weight:600;color:#166534;}
+.manual-err{color:var(--red);font-size:14px;font-weight:600;display:none;padding:4px 0;text-align:center;}
+
+/* ── toast ───────────────────────────────────────── */
+.toast{position:fixed;bottom:90px;left:50%;transform:translateX(-50%);background:#1e3a2f;color:#fff;padding:12px 20px;border-radius:14px;font-size:14px;font-weight:600;z-index:50;opacity:0;transition:opacity .3s;pointer-events:none;max-width:92%;text-align:center;}
+.toast.show{opacity:1;}
+
+/* ── spinner ─────────────────────────────────────── */
+.spin{width:20px;height:20px;border:3px solid rgba(255,255,255,.4);border-top-color:#fff;border-radius:50%;display:inline-block;animation:sp .8s linear infinite;vertical-align:-4px;}
+@keyframes sp{to{transform:rotate(360deg);}}
+.pad{padding:16px;}
+
+/* ── module grid (home screen) ──────────────── */
+.mod-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;padding:4px 0;}
+@media(max-width:400px){.mod-grid{grid-template-columns:repeat(2,1fr);}}
+.mod-card{background:#fff;border:2px solid var(--border);border-radius:16px;padding:16px 10px;text-align:center;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:6px;transition:border-color .15s,opacity .15s;position:relative;}
+.mod-card:active:not(.locked){border-color:var(--teal);background:#ecfdf5;}
+.mod-card.locked{opacity:.45;cursor:not-allowed;background:#f8fafc;}
+.mod-card .mc-icon{font-size:32px;width:52px;height:52px;display:flex;align-items:center;justify-content:center;background:#f0fdf4;border-radius:14px;}
+.mod-card.locked .mc-icon{background:#f1f5f9;}
+.mod-card .mc-name{font-size:13px;font-weight:700;color:var(--txt);line-height:1.2;}
+.mod-card.locked .mc-name{color:var(--muted);}
+.mod-card .mc-tag{font-size:11px;font-weight:600;color:var(--teal);background:#ecfdf5;padding:2px 8px;border-radius:8px;}
+.mod-card.locked .mc-tag{color:var(--muted);background:var(--bg);}
+.mc-lock{position:absolute;top:8px;right:8px;font-size:14px;opacity:.5;}
+.q-tag{display:inline-block;font-size:11px;font-weight:600;color:#0f766e;background:#ecfdf5;border:1px solid #a7f3d0;padding:1px 7px;border-radius:6px;margin:1px;}
+.q-sm{font-size:10px;padding:0 5px;}
+
+/* ── module function sub-screen ────────────── */
+.func-list{display:flex;flex-direction:column;gap:8px;padding:4px 0;}
+.func-btn{background:#fff;border:2px solid var(--border);border-radius:14px;padding:14px 16px;text-align:left;cursor:pointer;width:100%;display:flex;align-items:center;gap:12px;}
+.func-btn:active{border-color:var(--teal);background:#ecfdf5;}
+.func-icon{font-size:22px;flex-shrink:0;width:40px;height:40px;display:flex;align-items:center;justify-content:center;background:#f0fdf4;border-radius:10px;}
+.func-info{flex:1;min-width:0;}
+.func-name{font-size:16px;font-weight:700;color:var(--txt);}
+.func-desc{font-size:12px;color:var(--muted);margin-top:2px;}
 </style>
 </head>
 <body>
-<header>
-  <h1></h1>
-  <button class="gear" id="gear" title="Cài đặt">⚙️</button>
-</header>
-<div class="crumbs" id="crumbs"></div>
-<div class="qbar hide" id="queueBar"></div>
 
-<!-- MÀN HÌNH CHÍNH: 2 nhóm chức năng -->
-<div class="step hide" id="step1">
-  <div class="card">
-    <p class="steptitle">📝 Ghi nhận kết quả SX</p>
-    <div class="row">
-      <button class="b-thoi big full" data-mode="Thổi">💨<br>Thổi</button>
-      <button class="b-in big full" data-mode="In">🖨️<br>In</button>
+<!-- ════════════════════════════════════════════
+     SCREEN 1: Đăng nhập (Username + Mật khẩu)
+════════════════════════════════════════════ -->
+<section id="screenLogin" class="screen active">
+  <div class="topbar"><div class="ttl">QA-P.ERP</div></div>
+  <div class="picker-wrap">
+    <p class="picker-sub">Đăng nhập để bắt đầu quét</p>
+    <div class="field">
+      <label>Username</label>
+      <input id="loginUser" type="text" autocapitalize="none" autocomplete="username" placeholder="VD: tuyenpv" />
     </div>
-    <button class="b-dash full" id="btnDashboard" style="margin-top:12px">📊 Kiểm tra kết quả</button>
-    <button class="b-phe full" id="btnPhe" style="margin-top:8px">🗑️ Nhập Phế</button>
-    <button class="b-dash full" id="btnDaily" style="margin-top:8px;background:#0d9488">📈 Thống kê Sản lượng</button>
-  </div>
-  <div class="card">
-    <p class="steptitle">📦 Chuyển Cuộn</p>
-    <button class="b-go full" id="btnChuyen">📦 Chuyển cuộn sang Cắt</button>
-    <button class="b-dash full" id="btnChuyenStat" style="margin-top:8px;background:#7c3aed">📈 Thống kê chuyển cuộn</button>
-  </div>
-</div>
-
-<!-- BƯỚC 2: Công nhân -->
-<div class="card step hide" id="step2">
-  <div class="navrow">
-    <button class="nav-back" id="cnBack" title="Quay lại">←</button>
-    <button class="nav-home" id="cnHome" title="Về trang chính">🏠</button>
-  </div>
-  <p class="steptitle">Bước 2 — Chọn công nhân</p>
-  <input class="search" id="cnSearch" placeholder="🔎 Tìm mã hoặc tên..." autocomplete="off">
-  <div class="list" id="cnList"></div>
-</div>
-
-<!-- BƯỚC 3: Máy -->
-<div class="card step hide" id="step3">
-  <div class="navrow">
-    <button class="nav-back" id="myBack" title="Quay lại">←</button>
-    <button class="nav-home" id="myHome" title="Về trang chính">🏠</button>
-  </div>
-  <p class="steptitle">Bước 3 — Chọn máy</p>
-  <input class="search" id="mySearch" placeholder="🔎 Tìm mã hoặc tên..." autocomplete="off">
-  <div class="list" id="myList"></div>
-</div>
-
-<!-- BƯỚC 4: Quét nhiều QR / cuộn -->
-<div class="card step hide" id="step4">
-  <div class="navrow">
-    <button class="nav-back" id="step4Back" title="Đổi CN/Máy">←</button>
-    <button class="nav-home" id="step4Home" title="Về trang chính">🏠</button>
-  </div>
-  <div class="ctx" id="ctx"></div>
-
-  <!-- PHA A: Quét QR vào cuộn -->
-  <div id="scanPhase">
-    <div id="reader"></div>
-    <div class="status" id="status">Bấm "Bắt đầu Scan" để bật camera</div>
-    <button class="b-go full" id="btnScan">▶ Bắt đầu Scan QR</button>
-
-    <div class="lsxbox hide" id="pendingBox" style="margin-top:10px"></div>
-    <button class="b-add full hide" id="btnAddPending">📷 Scan LSX khác</button>
-
-    <label style="margin-top:10px">Hoặc nhập tay (LSX/Khối lượng)</label>
-    <div class="row">
-      <input class="fld" id="manualFld" placeholder="VD: LSX001/250" autocomplete="off" inputmode="text" enterkeyhint="done" style="margin-bottom:0">
-      <button class="b-manual" id="btnManual" style="padding:0 18px;width:auto">＋</button>
+    <div class="field">
+      <label>Mật khẩu</label>
+      <input id="loginPass" type="password" autocomplete="current-password" placeholder="Nhập mật khẩu" />
     </div>
+    <div id="loginErr" class="manual-err"></div>
+    <button id="loginBtn" class="btn lg green" onclick="doLogin()" style="margin-top:6px">Đăng nhập</button>
+    <div id="loginStatus" class="pick-status" style="display:none"></div>
+    <div style="text-align:center;color:var(--muted);margin-top:28px;font-size:13px">phiên bản 15</div>
+  </div>
+</section>
 
-    <div style="font-weight:600;margin:14px 0 8px" id="batchCount">Cuộn này: 0 QR</div>
-    <table>
-      <thead><tr><th>#</th><th>LSX</th><th>KL yêu cầu</th><th></th></tr></thead>
-      <tbody id="batchBody"></tbody>
-    </table>
-    <div class="empty" id="batchEmpty">Chưa quét QR nào cho cuộn này</div>
-
-    <button class="b-send full" id="btnStopScan" style="margin-top:12px">⏹ Dừng scan → nhập khối lượng cuộn</button>
+<!-- ════════════════════════════════════════════
+     SCREEN 1b: Chọn Module (sau đăng nhập)
+════════════════════════════════════════════ -->
+<section id="screenModules" class="screen">
+  <div class="topbar">
+    <div class="ttl">👤 <span id="modUser">—</span></div>
+    <button class="icon-btn" onclick="logout()">Đăng xuất</button>
   </div>
-
-  <!-- PHA B: Nhập khối lượng cuộn -->
-  <div id="weightPhase" class="hide">
-    <div class="lsxbox" id="methodBox"></div>
-    <label>Khối lượng cuộn thực tế (kg)</label>
-    <input class="fld" id="klcuonFld" placeholder="VD: 520" autocomplete="off" inputmode="decimal" enterkeyhint="done">
-    <button class="b-go full" id="btnCalc">Xem bảng phân bổ →</button>
-    <button class="b-back full" id="btnBackToScan" style="margin-top:8px">← Quét tiếp</button>
-  </div>
-
-  <!-- PHA C: Xem bảng phân bổ & gửi -->
-  <div id="previewPhase" class="hide">
-    <div class="lsxbox" id="previewInfo"></div>
-    <table>
-      <thead><tr><th>LSX</th><th>Yêu cầu</th><th>Phân bổ (KQ SX)</th></tr></thead>
-      <tbody id="previewBody"></tbody>
-    </table>
-    <div style="font-weight:700;margin-top:10px" id="previewSum"></div>
-    <button class="b-send full" id="btnConfirmSend" style="margin-top:12px">📤 Xác nhận & Gửi cuộn này</button>
-    <button class="b-back full" id="btnBackToWeight" style="margin-top:8px">← Sửa khối lượng</button>
-  </div>
-</div>
-
-<!-- BƯỚC 5: Dashboard kiểm tra kết quả -->
-<div class="card step hide" id="step5">
-  <div class="navrow">
-    <button class="nav-back" id="dashBack" title="Quay lại">←</button>
-    <button class="nav-home" id="dashHome" title="Về trang chính">🏠</button>
-  </div>
-  <p class="steptitle">📊 Kiểm tra kết quả sản xuất</p>
-  <div class="dash-summary" id="dashSummary"></div>
-  <div class="dash-filter" id="dashFilter">
-    <button class="active" data-f="all">Tất cả</button>
-    <button data-f="Thổi">💨 Thổi</button>
-    <button data-f="In">🖨️ In</button>
-  </div>
-  <input class="search" id="dashSearch" placeholder="🔎 Tìm LSX hoặc khách hàng..." autocomplete="off">
-  <div class="status" id="dashStatus" style="text-align:left;margin:0 0 6px"></div>
-  <div id="dashNote" style="font-size:12px;color:#98a2b3;margin:0 0 6px"></div>
-  <div class="dash-scroll">
-    <table class="dash-table">
-      <thead><tr><th class="col-lsx">LSX</th><th class="kh">Khách</th><th>KLYC</th><th>Đã SX</th><th>#</th></tr></thead>
-      <tbody id="dashBody"></tbody>
-    </table>
-  </div>
-  <div class="empty hide" id="dashEmpty">Chưa có dữ liệu Master</div>
-</div>
-
-<!-- BƯỚC 9: Sản lượng theo ngày -->
-<div class="card step hide" id="step9">
-  <div class="navrow">
-    <button class="nav-back" id="dailyBack" title="Quay lại">←</button>
-    <button class="nav-home" id="dailyHome" title="Về trang chính">🏠</button>
-  </div>
-  <p class="steptitle">📈 Thống kê Sản lượng</p>
-  <div class="daterow">
-    <span class="dlbl">Từ</span><input class="fld" type="date" id="dFrom">
-    <span class="dlbl">Đến</span><input class="fld" type="date" id="dTo">
-  </div>
-  <div class="row" style="margin-bottom:4px">
-    <button class="b-go" id="btnDailyLoad" style="flex:2;padding:13px 4px">🔍 Xem báo cáo</button>
-    <button class="b-dash" id="btnToday" style="flex:1;padding:13px 4px">Hôm nay</button>
-    <button class="b-dash" id="btnYesterday" style="flex:1;padding:13px 4px;background:#8b5cf6">Hôm qua</button>
-  </div>
-  <div class="status" id="dailyStatus" style="text-align:left;margin:0 0 6px"></div>
-  <div class="dash-filter" id="dailyFilter">
-    <button class="active" data-df="all">Tất cả</button>
-    <button data-df="Thổi">💨 Thổi</button>
-    <button data-df="In">🖨️ In</button>
-  </div>
-  <div class="dash-summary" id="dailySummary"></div>
-  <div id="dailyContent" class="hide">
-    <p class="steptitle" style="margin:12px 0 6px">🏭 Sản lượng theo máy</p>
-    <table class="dash-table">
-      <thead><tr><th>Máy</th><th>Sản lượng (kg)</th><th>Số cuộn</th></tr></thead>
-      <tbody id="dailySxBody"></tbody>
-    </table>
-    <div class="empty hide" id="dailySxEmpty">Không có dữ liệu sản xuất trong khoảng ngày này</div>
-    <p class="steptitle" style="margin:16px 0 6px">🗑️ Phế theo máy</p>
-    <table class="dash-table">
-      <thead><tr><th>Máy</th><th>Phế trơn</th><th>Phế màu</th><th>Tổng</th></tr></thead>
-      <tbody id="dailyPheBody"></tbody>
-    </table>
-    <div class="empty hide" id="dailyPheEmpty">Không có ghi nhận phế trong khoảng ngày này</div>
-  </div>
-</div>
-
-<!-- BƯỚC 10: Thống kê chuyển cuộn -->
-<div class="card step hide" id="step10">
-  <div class="navrow">
-    <button class="nav-back" id="ccBack" title="Quay lại">←</button>
-    <button class="nav-home" id="ccHome" title="Về trang chính">🏠</button>
-  </div>
-  <p class="steptitle">📈 Thống kê chuyển cuộn</p>
-  <div class="daterow">
-    <span class="dlbl">Từ</span><input class="fld" type="date" id="ccFrom">
-    <span class="dlbl">Đến</span><input class="fld" type="date" id="ccTo">
-  </div>
-  <div class="row" style="margin-bottom:8px">
-    <button class="b-go" id="btnCcLoad" style="flex:2;padding:13px 4px">🔍 Xem báo cáo</button>
-    <button class="b-dash" id="btnCcToday" style="flex:1;padding:13px 4px">Hôm nay</button>
-    <button class="b-dash" id="btnCcYesterday" style="flex:1;padding:13px 4px;background:#8b5cf6">Hôm qua</button>
-  </div>
-  <input class="search" id="ccSearch" placeholder="🔎 Tìm theo LSX..." autocomplete="off">
-  <div class="status" id="ccStatus" style="text-align:left;margin:0 0 6px"></div>
-  <div class="dash-summary" id="ccSummary"></div>
-  <div class="dash-scroll">
-    <table class="dash-table">
-      <thead><tr><th>Thời gian</th><th>LSX</th><th>KL (kg)</th></tr></thead>
-      <tbody id="ccStatBody"></tbody>
-    </table>
-  </div>
-  <div class="empty hide" id="ccEmpty">Không có dữ liệu chuyển cuộn trong khoảng ngày này</div>
-</div>
-
-<!-- BƯỚC 6: Nhập Phế — chọn công đoạn -->
-<div class="card step hide" id="step6">
-  <div class="navrow">
-    <button class="nav-back" id="pheBack1" title="Quay lại">←</button>
-    <button class="nav-home" id="pheHome1" title="Về trang chính">🏠</button>
-  </div>
-  <p class="steptitle">🗑️ Nhập Phế — Chọn công đoạn</p>
-  <div class="row">
-    <button class="b-thoi big full" data-phe-mode="Thổi">💨<br>Thổi</button>
-    <button class="b-in big full" data-phe-mode="In">🖨️<br>In</button>
-  </div>
-</div>
-
-<!-- BƯỚC 7: Nhập Phế — form nhập -->
-<div class="card step hide" id="step7">
-  <div class="navrow">
-    <button class="nav-back" id="pheBack3" title="Đổi CN/Máy">←</button>
-    <button class="nav-home" id="pheHome3" title="Về trang chính">🏠</button>
-  </div>
-  <div class="ctx" id="pheCtx"></div>
-  <p class="steptitle">Nhập khối lượng phế (kg)</p>
-  <label>Phế trơn (kg)</label>
-  <input class="fld" id="pheTron" placeholder="0" autocomplete="off" inputmode="decimal" enterkeyhint="next">
-  <label>Phế màu (kg)</label>
-  <input class="fld" id="pheMau" placeholder="0" autocomplete="off" inputmode="decimal" enterkeyhint="done">
-  <button class="b-send full" id="btnPheSend" style="margin-top:12px">📤 Gửi phế</button>
-</div>
-
-<!-- BƯỚC 8: Chuyển cuộn sang Cắt -->
-<div class="card step hide" id="step8">
-  <div class="navrow">
-    <button class="nav-back" id="btnChuyenBack" title="Quay lại">←</button>
-    <button class="nav-home" id="chuyenHome" title="Về trang chính">🏠</button>
-  </div>
-  <p class="steptitle">📦 Chuyển cuộn sang Cắt</p>
-
-  <!-- Scan phase -->
-  <div id="chuyenScanPhase">
-    <div id="chuyenReader" style="width:100%;border-radius:12px;overflow:hidden;background:#000;min-height:60px"></div>
-    <div class="status" id="chuyenStatus">Bấm "Bắt đầu Scan" để bật camera</div>
-    <button class="b-go full" id="btnChuyenScan">▶ Bắt đầu Scan QR</button>
-
-    <div class="lsxbox hide" id="chuyenPendingBox" style="margin-top:10px"></div>
-    <button class="b-add full hide" id="btnChuyenAddMore">📷 Scan LSX khác (cuộn ghép)</button>
-
-    <label style="margin-top:10px">Hoặc nhập tay (mã LSX)</label>
-    <div class="row">
-      <input class="fld" id="chuyenManualFld" placeholder="VD: 26062725002" autocomplete="off" inputmode="text" enterkeyhint="done" style="margin-bottom:0">
-      <button class="b-manual" id="btnChuyenManual" style="padding:0 18px;width:auto">＋</button>
+  <div class="picker-wrap">
+    <p class="picker-sub" id="modSubtitle">Chọn module</p>
+    <div id="moduleGrid" class="mod-grid"></div>
+    <div id="moduleNoAccess" class="pick-status" style="display:none;color:var(--red)">
+      Tài khoản chưa được gán quyền module nào.<br>Liên hệ quản trị viên.
     </div>
-
-    <div style="font-weight:600;margin:14px 0 8px" id="chuyenCount">Đã quét: 0 LSX</div>
-    <table>
-      <thead><tr><th>#</th><th>LSX</th><th></th></tr></thead>
-      <tbody id="chuyenBody"></tbody>
-    </table>
-    <div class="empty" id="chuyenEmpty">Chưa quét QR nào</div>
-
-    <button class="b-send full" id="btnChuyenSend" style="margin-top:12px">📤 Xác nhận chuyển cuộn</button>
   </div>
-</div>
+</section>
 
-<div class="toast" id="toast"></div>
+<!-- SCREEN 1c: Chức năng trong module -->
+<section id="screenFuncs" class="screen">
+  <div class="topbar">
+    <button class="icon-btn" onclick="backToModules()">←</button>
+    <div class="ttl"><span id="funcModIcon">📋</span> <span id="funcModName">—</span></div>
+    <button class="icon-btn" onclick="enterModuleScreen()">🏠</button>
+  </div>
+  <div class="picker-wrap">
+    <p class="picker-sub" id="funcSubtitle">Chọn chức năng</p>
+    <div id="funcList" class="func-list"></div>
+  </div>
+</section>
 
-<!-- Modal lịch sử SX của 1 LSX -->
-<div class="modal" id="histModal">
-  <div class="box">
-    <h3 id="histTitle">🕘 Lịch sử sản xuất</h3>
-    <div class="status" id="histInfo" style="text-align:left;margin:0 0 8px"></div>
-    <div style="max-height:55vh;overflow-y:auto">
-      <table class="dash-table">
-        <thead><tr><th>Thời gian</th><th>Tổ</th><th>CN</th><th>Máy</th><th>KQ SX</th></tr></thead>
-        <tbody id="histBody"></tbody>
-      </table>
+<!-- SCREEN 1d: Chọn nhánh ghi nhận SX -->
+<section id="screenBranch" class="screen">
+  <div class="topbar">
+    <button class="icon-btn" onclick="enterModuleScreen()">←</button>
+    <div class="ttl">📋 Ghi nhận sản xuất</div>
+    <button class="icon-btn" onclick="enterModuleScreen()">🏠</button>
+  </div>
+  <div class="picker-wrap">
+    <p class="picker-sub">Chọn nhánh sản xuất</p>
+    <div class="func-list">
+      <button class="func-btn" onclick="selectBranch('CT')">
+        <div class="func-icon">✂️</div>
+        <div class="func-info">
+          <div class="func-name">Cắt / Thủ công</div>
+          <div class="func-desc">Quét QR → nhập Khối lượng thực tế (kg)</div>
+        </div>
+      </button>
+      <button class="func-btn" onclick="selectBranch('GTB')">
+        <div class="func-icon">📦</div>
+        <div class="func-info">
+          <div class="func-name">Giấy / Thùng / Bìa</div>
+          <div class="func-desc">Chỉ quét QR — KL thực tế tự động = KL (QR)</div>
+        </div>
+      </button>
     </div>
-    <button class="b-back full" id="histClose" style="margin-top:10px">Đóng</button>
   </div>
-</div>
+</section>
 
-<!-- Modal chi tiết theo Máy (Thống kê Sản lượng / Phế) -->
-<div class="modal" id="mayModal">
-  <div class="box">
-    <h3 id="mayTitle">🏭 Chi tiết máy</h3>
-    <div class="status" id="mayInfo" style="text-align:left;margin:0 0 8px"></div>
-    <div style="max-height:55vh;overflow-y:auto">
-      <table class="dash-table">
-        <thead id="mayHead"></thead>
-        <tbody id="mayBody"></tbody>
-      </table>
+<!-- ════════════════════════════════════════════
+     SCREEN 2: Chọn Máy
+════════════════════════════════════════════ -->
+<section id="screenMay" class="screen">
+  <div class="topbar">
+    <button class="icon-btn" onclick="backFromMay()">←</button>
+    <div class="ttl">🏭 Chọn Máy</div>
+    <button class="icon-btn" onclick="enterModuleScreen()">🏠</button>
+  </div>
+  <div class="picker-wrap">
+    <p class="picker-sub" id="mayContextLabel"></p>
+    <input id="searchMay" class="search-box" type="text" placeholder="Tìm máy..." oninput="filterMachines(this.value)" />
+    <div id="mayStatus" class="pick-status" style="display:none">Đang tải...</div>
+    <div id="mayList" class="pick-list"></div>
+    <button id="mayRetry" class="btn ghost" style="margin-top:16px;display:none" onclick="loadMachines(true)">Thử tải lại</button>
+    <div style="margin-top:20px;border-top:1px solid var(--border);padding-top:14px;">
+      <button class="btn ghost" onclick="openManualPicker('may')">✏️ Nhập tay (máy chưa có trong danh sách)</button>
     </div>
-    <button class="b-back full" id="mayClose" style="margin-top:10px">Đóng</button>
+  </div>
+</section>
+
+<!-- ════════════════════════════════════════════
+     SCREEN 3: Chọn Công nhân
+════════════════════════════════════════════ -->
+<section id="screenCN" class="screen">
+  <div class="topbar">
+    <button class="icon-btn" onclick="show('screenMay')">←</button>
+    <div class="ttl">👷 Chọn Công nhân</div>
+    <button class="icon-btn" onclick="enterModuleScreen()">🏠</button>
+  </div>
+  <div class="picker-wrap">
+    <p class="picker-sub" id="cnContextLabel"></p>
+    <input id="searchCN" class="search-box" type="text" placeholder="Tìm công nhân..." oninput="filterWorkers(this.value)" />
+    <div id="cnStatus" class="pick-status" style="display:none">Đang tải...</div>
+    <div id="cnList" class="pick-list"></div>
+    <button id="cnRetry" class="btn ghost" style="margin-top:16px;display:none" onclick="loadWorkers(true)">Thử tải lại</button>
+    <div style="margin-top:20px;border-top:1px solid var(--border);padding-top:14px;">
+      <button class="btn ghost" onclick="openManualPicker('cn')">✏️ Nhập tay (công nhân chưa có trong danh sách)</button>
+    </div>
+  </div>
+</section>
+
+<!-- ════════════════════════════════════════════
+     SCREEN 4: Quét Sản phẩm
+════════════════════════════════════════════ -->
+<section id="screenScan" class="screen">
+  <div class="topbar">
+    <button class="icon-btn" onclick="goHome()">←</button>
+    <div class="ttl">👤 <span id="curUser">—</span></div>
+    <button class="icon-btn" onclick="enterModuleScreen()">🏠</button>
+  </div>
+
+  <div class="session">
+    <div id="slotMay" class="slot">
+      <div class="lbl">Máy</div>
+      <div class="val" id="valMay">— chưa chọn —</div>
+    </div>
+    <div id="slotCN" class="slot">
+      <div class="lbl">Công nhân</div>
+      <div class="val" id="valCN">— chưa chọn —</div>
+    </div>
+  </div>
+  <div class="switch-row">
+    <button class="btn small amber" onclick="switchMachineCN()">🔄 Chuyển máy / CN</button>
+  </div>
+
+  <div class="counter">Đã ghi nhận phiên này: <b id="count">0</b> bao</div>
+
+  <div id="reader"></div>
+  <div id="hint" class="hint info">Bấm "Bắt đầu quét" để mở camera</div>
+
+  <div class="controls">
+    <button id="btnScanNext" class="btn lg green" onclick="startOrNext()">Bắt đầu quét</button>
+    <button class="btn ghost" onclick="openManualInput()">✏️ Nhập thủ công</button>
+    <div class="row2">
+      <button class="btn ghost" onclick="openList()">Xem danh sách (<span id="countBtn">0</span>)</button>
+      <button class="btn amber" onclick="finishSession()">Kết thúc</button>
+    </div>
+  </div>
+</section>
+
+<!-- ════════════════════════════════════════════
+     SCREEN 5: Danh sách kết quả
+════════════════════════════════════════════ -->
+<section id="screenList" class="screen">
+  <div class="topbar">
+    <button class="icon-btn" onclick="backToScan()">←</button>
+    <div class="ttl">Danh sách kết quả</div>
+    <button class="icon-btn" onclick="enterModuleScreen()">🏠</button>
+  </div>
+  <div id="sendBanner" class="banner"></div>
+  <div class="listWrap" id="listWrap"></div>
+  <div class="controls">
+    <button id="btnSend" class="btn lg green" onclick="sendAll()">Gửi tất cả lên Google Sheet</button>
+  </div>
+</section>
+
+<!-- ════════════════════════════════════════════
+     MODAL: Sửa dòng
+════════════════════════════════════════════ -->
+<div id="editOverlay" class="overlay">
+  <div class="sheet">
+    <h3>Sửa kết quả</h3>
+    <div class="field"><label>Mã Máy</label><input id="eMay" type="text" /></div>
+    <div class="field"><label>Mã Công nhân</label><input id="eCN" type="text" /></div>
+    <div class="field"><label>Mã Sản phẩm</label><input id="eSP" type="text" /></div>
+    <div class="field"><label>KL thực tế (kg)</label><input id="eKg" type="text" inputmode="decimal" /></div>
+    <div class="field"><label>Ghi chú</label><input id="eNote" type="text" placeholder="Ví dụ: hàng lỗi..." /></div>
+    <div class="row2" style="margin-bottom:10px">
+      <button class="btn red" onclick="deleteEditing()">Xóa dòng</button>
+      <button class="btn green" onclick="saveEditing()">Lưu</button>
+    </div>
+    <button class="btn gray" onclick="closeEdit()">Hủy</button>
   </div>
 </div>
 
-<!-- Modal PIN -->
-<div class="modal" id="pinModal">
-  <div class="box">
-    <h3>🔒 Nhập mã PIN</h3>
-    <p>Nhập PIN để ghi nhận sản xuất. Liên hệ quản lý nếu chưa có PIN.</p>
-    <input class="fld" id="pinInput" placeholder="Nhập PIN..." autocomplete="off" inputmode="numeric" maxlength="10">
-    <div class="row">
-      <button class="b-back full" id="pinCancel">Đóng</button>
-      <button class="b-go full" id="pinOk">Xác nhận</button>
+<!-- ════════════════════════════════════════════
+     MODAL: Nhập thủ công SP
+════════════════════════════════════════════ -->
+<div id="manualOverlay" class="overlay">
+  <div class="sheet">
+    <h3>✏️ Nhập thủ công Sản phẩm</h3>
+    <div id="manualCtx" class="manual-ctx"></div>
+    <div class="field">
+      <label>Mã Sản phẩm</label>
+      <input id="mSP" type="text" placeholder="A/B/C/D" autocapitalize="characters" />
+    </div>
+    <div class="field">
+      <label>KL thực tế (kg) <span style="color:var(--red)">*</span></label>
+      <input id="mKg" type="text" inputmode="decimal" placeholder="VD: 12,5" enterkeyhint="done" />
+    </div>
+    <div class="field">
+      <label>Ghi chú (tùy chọn)</label>
+      <input id="mNote" type="text" placeholder="Ví dụ: hàng lỗi..." />
+    </div>
+    <div id="manualErr" class="manual-err"></div>
+    <div class="row2" style="margin-top:8px;margin-bottom:10px">
+      <button class="btn gray" onclick="closeManual()">Hủy</button>
+      <button class="btn green" onclick="submitManual()">✓ Xác nhận</button>
     </div>
   </div>
 </div>
 
-<!-- Cài đặt -->
-<div class="modal" id="modal">
-  <div class="box">
-    <h3>⚙️ Kết nối Google Sheet</h3>
-    <p>Dán link "Web app" (/exec) của Apps Script. App sẽ tải danh sách CN/Máy và gửi kết quả vào sheet này.</p>
-    <input class="fld" id="urlInput" placeholder="https://script.google.com/macros/s/.../exec" autocomplete="off">
-    <div class="row">
-      <button class="b-back full" id="btnCancel">Đóng</button>
-      <button class="b-add full" id="btnSaveUrl">Lưu &amp; tải DS</button>
+<!-- MODAL: Nhập tay Máy / CN -->
+<div id="manualPickerOverlay" class="overlay">
+  <div class="sheet">
+    <h3 id="manualPickerTitle">Nhập thủ công</h3>
+    <div class="field">
+      <label id="manualPickerCodeLabel">Mã</label>
+      <input id="mpCode" type="text" placeholder="Nhập mã tuỳ ý" autocapitalize="characters" />
     </div>
-    <button class="linkbtn" id="btnReload" style="margin-top:12px">🔄 Tải lại danh sách CN/Máy</button>
+    <div class="field">
+      <label>Tên (tùy chọn)</label>
+      <input id="mpName" type="text" placeholder="Tên hiển thị..." />
+    </div>
+    <div id="mpErr" class="manual-err"></div>
+    <div class="row2" style="margin-top:8px;margin-bottom:10px">
+      <button class="btn gray" onclick="closeManualPicker()">Hủy</button>
+      <button class="btn green" onclick="submitManualPicker()">✓ Xác nhận</button>
+    </div>
   </div>
 </div>
+
+<!-- MODAL: Nhập khối lượng sau khi quét -->
+<div id="weightOverlay" class="overlay">
+  <div class="sheet">
+    <h3>⚖️ Nhập KL thực tế</h3>
+    <div id="weightCtx" class="manual-ctx"></div>
+    <div class="field">
+      <label>KL thực tế (kg) <span style="color:var(--red)">*</span></label>
+      <input id="wKg" type="text" inputmode="decimal" placeholder="VD: 12,5" enterkeyhint="done" style="font-size:22px;text-align:center;font-weight:700;" />
+    </div>
+    <div id="weightErr" class="manual-err"></div>
+    <div class="row2" style="margin-top:8px;margin-bottom:10px">
+      <button class="btn gray" onclick="cancelWeight()">Hủy</button>
+      <button class="btn green" onclick="confirmWeight()">✓ Xác nhận</button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div id="toast" class="toast"></div>
 
 <script>
-const URLKEY = 'tksx_url', MKEY = 'tksx_masters', QKEY = 'tksx_queue', PINKEY = 'tksx_pin', PINCKEY = 'tksx_pin_chuyen';
-const DASHFULL = 'tksx_dash_full', DAILYCACHE = 'tksx_daily_cache2';
-// Link Google Sheet gắn sẵn -> mọi điện thoại tự kết nối, chỉ cần mở 1 link Netlify
-const DEFAULT_URL = 'https://script.google.com/macros/s/AKfycbztgdaMXNFinyvZWXeO18tGHFFUKXW6V0XvvbWNR71L311WnsbVVWDreYSuLsdpZnrsiA/exec';
-let sheetUrl = localStorage.getItem(URLKEY) || DEFAULT_URL;
-let masters = JSON.parse(localStorage.getItem(MKEY) || 'null');
-let storedPIN = localStorage.getItem(PINKEY) || '';  // PIN SX từ Sheet
-let storedPINChuyen = localStorage.getItem(PINCKEY) || '';  // PIN chuyển cuộn từ Sheet
-let isAuthed = false;  // đã nhập đúng PIN SX trong phiên này chưa
-let isAuthChuyen = false;  // đã nhập đúng PIN chuyển cuộn chưa
-let pinTarget = 'sx';  // 'sx' hoặc 'chuyen' — PIN modal đang check cho flow nào
-let sel = { mode: '', cn: '', may: '' };
-let qr = null, scanning = false, lastCode = '', lastT = 0;
-// Trạng thái cuộn đang quét
-let batch = [];          // [{data, lsx, klyc}]
-let curMethod = '';      // 'GỘP' | 'ĐƠN'
-let curKlcuon = 0;       // khối lượng cuộn vừa nhập
-let curAlloc = [];       // mảng kết quả phân bổ theo từng dòng batch
-let sentRolls = 0;       // số cuộn đã gửi trong phiên
-// Dashboard data
-let dashData = [];       // TOÀN BỘ Master (đã kèm tên KH từng dòng) — lưu trên máy
-let dashFilter = 'all';  // filter hiện tại
-let khUrl = '';          // link tab đơn hàng (đã kèm #gid=)
-let khCol = 'A';         // cột chứa LSX trong sheet đơn hàng
-let pendingAction = null; // hành động chờ sau khi nhập PIN
-let appMode = 'sx';      // 'sx' = sản xuất, 'phe' = nhập phế
-// Chuyển cuộn
-let chuyenBatch = [];    // [{lsx}] — danh sách LSX trong cuộn đang chuyển
-let qrChuyen = null;     // Html5Qrcode instance cho chuyển cuộn
-let chuyenScanning = false;
-let chuyenPaused = false;
-let chuyenLastCode = '', chuyenLastT = 0;
-// Hàng đợi gửi (lưu trên máy) — mất mạng vẫn giữ, có mạng tự gửi
-let queue = JSON.parse(localStorage.getItem(QKEY) || '[]');
-let flushing = false;
+/* ══════════════════════════════════════════════════
+   CẤU HÌNH
+══════════════════════════════════════════════════ */
+const CONFIG = {
+  APPS_SCRIPT_URL: "https://script.google.com/macros/s/AKfycbweJ234d0G0CTZfSwd21tX-EzWq29K-XHELqBh0ho0MQv2YMJ1-9nv0ZHz_Mv9_V_Ns/exec"
+};
 
-const $ = id => document.getElementById(id);
-const esc = s => ('' + (s==null?'':s)).replace(/[&<>]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
-const saveQ = () => localStorage.setItem(QKEY, JSON.stringify(queue));
-const genId = () => Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 8);
-function toast(m){ const t=$('toast'); t.textContent=m; t.classList.add('show'); clearTimeout(t._t); t._t=setTimeout(()=>t.classList.remove('show'),2400); }
-function nowStr(){ const d=new Date(),p=n=>String(n).padStart(2,'0'); return `${p(d.getDate())}/${p(d.getMonth()+1)}/${d.getFullYear()} ${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`; }
+/* ══════════════════════════════════════════════════
+   TRẠNG THÁI
+══════════════════════════════════════════════════ */
+let state = {
+  user:        null,   // tên người phụ trách (string)
+  maNV:        null,   // mã nhân viên
+  username:    null,   // username đăng nhập
+  permissions: [],     // [{module, tenModule, url, quyen}]
+  currentMay:  null,   // {ma, ten, ghiChu} hoặc null
+  currentCN:   null,   // {ma, ten, ghiChu} hoặc null
+  rows:        [],     // [{may, mayTen, cn, cnTen, sp, note, ts}]
+  editingIndex: -1,
+  fromScan:    false,  // true nếu vào screenMay từ "Chuyển máy/CN"
+  branch:      "CT",   // nhánh ghi nhận: "CT" (Cắt/Thủ công — nhập KL tay) | "GTB" (Giấy/Thùng/Bìa — KL tự = KL QR)
+  branchLocked: false, // true = nhánh đến từ phân quyền (?branch= trong ChucNang) → không cho quay về màn chọn nhánh
+};
 
+const BRANCH_LABEL = { CT: "Cắt / Thủ công", GTB: "Giấy / Thùng / Bìa" };
+// Nhánh → các tổ được phép. Máy/CN CHƯA gán tổ (ws trống) hiện ở mọi nhánh (không chặn nhầm).
+const BRANCH_WS = { CT: ["CAT","TCO"], GTB: ["GTB"] };
+
+function byBranch(list){
+  const allow = BRANCH_WS[state.branch];
+  if(!allow) return list;
+  return list.filter(it => {
+    const ws = String((it && it.ws) || "").toUpperCase();
+    return !ws || allow.includes(ws);
+  });
+}
+
+let qr = null;
+let scanning  = false;
+let scanLocked = true;
+let lastText  = "";
+let lastTextTime = 0;
+
+const LS_USER          = "ghinhan_user";
+const LS_ROWS          = "ghinhan_rows";
+const LS_MACHINES      = "ghinhan_machines";
+const LS_WORKERS       = "ghinhan_workers";
+const LS_QUEUE         = "ghinhan_queue";
+const LS_LAST_USERNAME = "ghinhan_last_username";
+
+let allMachines = [];
+let allWorkers  = [];
+
+/* ══════════════════════════════════════════════════
+   ÂM THANH + RUNG
+══════════════════════════════════════════════════ */
+let audioCtx = null;
+function ac(){ if(!audioCtx){try{audioCtx=new(window.AudioContext||window.webkitAudioContext)();}catch(e){}} return audioCtx; }
+function tone(freq,dur,when,type){
+  const c=ac();if(!c)return;
+  const o=c.createOscillator(),g=c.createGain();
+  o.type=type||"sine";o.frequency.value=freq;
+  o.connect(g);g.connect(c.destination);
+  const t=c.currentTime+(when||0);
+  g.gain.setValueAtTime(0.0001,t);
+  g.gain.exponentialRampToValueAtTime(0.3,t+0.01);
+  g.gain.exponentialRampToValueAtTime(0.0001,t+dur);
+  o.start(t);o.stop(t+dur+0.02);
+}
+function buzz(p){try{navigator.vibrate&&navigator.vibrate(p);}catch(e){}}
+const FB={
+  single(){tone(880,0.12);buzz(80);},
+  row(){tone(1175,0.12,0);tone(1568,0.14,0.13);buzz([60,40,90]);},
+  error(){tone(200,0.16,0,"square");tone(200,0.16,0.22,"square");buzz([40,40,40]);},
+  sendOk(){tone(784,0.12,0);tone(1047,0.18,0.12);buzz(200);},
+  sendFail(){tone(196,0.18,0,"square");tone(196,0.18,0.25,"square");tone(196,0.18,0.5,"square");buzz([100,60,100,60,100]);},
+};
+
+/* ══════════════════════════════════════════════════
+   TOAST
+══════════════════════════════════════════════════ */
+function showToast(msg,duration){
+  const t=document.getElementById("toast");
+  t.textContent=msg;t.classList.add("show");
+  clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove("show"),duration||3000);
+}
+
+/* ══════════════════════════════════════════════════
+   ĐIỀU HƯỚNG
+══════════════════════════════════════════════════ */
 function show(id){
-  document.querySelectorAll('.step').forEach(e=>e.classList.add('hide'));
-  $(id).classList.remove('hide');
-  // Màn hình con (level 2+): ẩn tiêu đề app + dòng breadcrumbs để tiết kiệm không gian
-  const isHome = id === 'step1';
-  document.querySelector('header').style.display = isHome ? 'flex' : 'none';
-  $('crumbs').style.display = isHome ? 'block' : 'none';
-}
-function updateCrumbs(){
-  let s = '';
-  if (sel.mode) s += 'Công đoạn: <b>' + sel.mode + '</b>';
-  if (sel.cn) s += ' · CN: <b>' + esc(sel.cn) + '</b>';
-  if (sel.may) s += ' · Máy: <b>' + esc(sel.may) + '</b>';
-  $('crumbs').innerHTML = s;
+  document.querySelectorAll(".screen").forEach(s=>s.classList.remove("active"));
+  document.getElementById(id).classList.add("active");
 }
 
-// ---------- Bước 1 ----------
-document.querySelectorAll('[data-mode]').forEach(b => b.onclick = () => {
-  const go = () => {
-    sel.mode = b.dataset.mode; sel.cn=''; sel.may='';
-    updateCrumbs();
-    if (!masters) { toast('Chưa có danh sách. Bấm ⚙️ để kết nối & tải.'); openSettings(); return; }
-    renderPicker('cn');
-    show('step2');
-  };
-  if (isAuthed) { go(); return; }
-  // Cần nhập PIN trước khi ghi nhận sản xuất
-  pinTarget = 'sx';
-  pendingAction = go;
-  $('pinInput').value = '';
-  $('pinModal').classList.add('show');
-  setTimeout(() => $('pinInput').focus(), 200);
-});
-
-// ---------- Picker CN / Máy ----------
-function listFor(kind){
-  const m = sel.mode === 'Thổi'
-    ? (kind==='cn' ? masters.cn_thoi : masters.may_thoi)
-    : (kind==='cn' ? masters.cn_in   : masters.may_in);
-  return m || [];
+/* ══════════════════════════════════════════════════
+   FETCH HELPER
+══════════════════════════════════════════════════ */
+async function apiFetch(action){
+  const sep = CONFIG.APPS_SCRIPT_URL.includes("?") ? "&" : "?";
+  const res = await fetch(CONFIG.APPS_SCRIPT_URL+sep+"action="+action+"&t="+Date.now(),
+    {method:"GET",redirect:"follow"});
+  return res.json();
 }
-function renderPicker(kind){
-  const data = listFor(kind);
-  const listEl = kind==='cn' ? $('cnList') : $('myList');
-  const searchEl = kind==='cn' ? $('cnSearch') : $('mySearch');
-  const draw = (q) => {
-    q = (q||'').toLowerCase().trim();
-    listEl.innerHTML = '';
-    const filtered = data.filter(x => !q || (x.code+' '+x.name).toLowerCase().indexOf(q)!==-1);
-    if (!filtered.length){ listEl.innerHTML = '<div class="empty">Không có dữ liệu. Kiểm tra sheet master hoặc bấm ⚙️ tải lại.</div>'; return; }
-    filtered.forEach(x => {
-      const b = document.createElement('button');
-      b.className = 'item';
-      // Chỉ hiển thị Tên (mã vẫn dùng được để tìm kiếm); nếu chưa có tên thì hiện mã
-      b.innerHTML = esc(x.name || x.code);
-      const stored = x.name || x.code;
-      b.onclick = () => pick(kind, stored);
-      listEl.appendChild(b);
+
+/* ══════════════════════════════════════════════════
+   SCREEN 1: Đăng nhập (Username + Mật khẩu)
+══════════════════════════════════════════════════ */
+function loginSetErr(msg){
+  const el=document.getElementById("loginErr");
+  if(msg){ el.textContent=msg; el.style.display="block"; }
+  else { el.textContent=""; el.style.display="none"; }
+}
+
+async function doLogin(){
+  const username = document.getElementById("loginUser").value.trim();
+  const password = document.getElementById("loginPass").value;
+  loginSetErr("");
+
+  if(!username || !password){
+    loginSetErr("Vui lòng nhập đủ Username và Mật khẩu");
+    return;
+  }
+
+  const btn = document.getElementById("loginBtn");
+  const oldTxt = btn.textContent;
+  btn.disabled=true; btn.innerHTML='<span class="spin"></span> Đang đăng nhập...';
+
+  try{
+    const res = await fetch(CONFIG.APPS_SCRIPT_URL, {
+      method:"POST",
+      headers:{"Content-Type":"text/plain;charset=utf-8"},
+      body:JSON.stringify({action:"login", username, password}),
+      redirect:"follow"
     });
-  };
-  searchEl.value = '';
-  searchEl.oninput = () => draw(searchEl.value);
-  draw('');
-}
-function pick(kind, value){
-  if (kind==='cn'){ sel.cn = value; updateCrumbs(); renderPicker('may'); show('step3'); }
-  else {
-    sel.may = value; updateCrumbs();
-    if (appMode === 'phe') enterPheForm();
-    else enterStep4();
-  }
-}
-$('cnBack').onclick = () => { if (appMode==='phe') show('step6'); else show('step1'); };
-$('myBack').onclick = () => { renderPicker('cn'); show('step2'); };
+    const out = await res.json();
+    if(out.result==="ok"){
+      state.user = out.ten || username;
+      state.maNV = out.maNV || "";
+      state.username = out.username || username;
+      state.permissions = out.permissions || [];
+      state.fromScan = false;
+      localStorage.setItem(LS_LAST_USERNAME, username);
+      document.getElementById("loginPass").value="";
+      btn.disabled=false; btn.textContent=oldTxt;
 
-// ---------- Bước 4 ----------
-function showPhase(p){
-  $('scanPhase').classList.toggle('hide', p!=='scan');
-  $('weightPhase').classList.toggle('hide', p!=='weight');
-  $('previewPhase').classList.toggle('hide', p!=='preview');
-}
-function ctxText(){
-  let s = '💨🖨️ <b>'+sel.mode+'</b> &nbsp;|&nbsp; 👷 <b>'+esc(sel.cn)+'</b> &nbsp;|&nbsp; ⚙️ <b>'+esc(sel.may)+'</b>';
-  if (sentRolls) s += ' &nbsp;|&nbsp; ✅ Đã gửi <b>'+sentRolls+'</b> cuộn';
-  return s;
-}
-function enterStep4(){
-  batch = []; curMethod=''; curKlcuon=0; curAlloc=[]; pendingQR=null; paused=false;
-  $('pendingBox').classList.add('hide'); $('btnAddPending').classList.add('hide');
-  $('ctx').innerHTML = ctxText();
-  renderBatch();
-  showPhase('scan');
-  show('step4');
-}
-$('step4Back').onclick = () => { stopScan(); batch=[]; renderBatch(); renderPicker('cn'); show('step2'); };
+      // Lưu session vào sessionStorage (để tien-do.html dùng chung)
+      sessionStorage.setItem("ghinhan_session", JSON.stringify({
+        user: state.user, maNV: state.maNV, username: state.username,
+        permissions: state.permissions, ts: Date.now()
+      }));
 
-// --- Tiếng bíp bằng file WAV tạo sẵn (ổn định trên Android & iPhone) ---
-let beepAudio = null;
-function makeBeepURL(freq, ms, vol){
-  const sr=44100, n=Math.floor(sr*ms/1000), buf=new ArrayBuffer(44+n*2), dv=new DataView(buf);
-  const ws=(o,s)=>{ for(let i=0;i<s.length;i++) dv.setUint8(o+i, s.charCodeAt(i)); };
-  ws(0,'RIFF'); dv.setUint32(4,36+n*2,true); ws(8,'WAVE'); ws(12,'fmt ');
-  dv.setUint32(16,16,true); dv.setUint16(20,1,true); dv.setUint16(22,1,true);
-  dv.setUint32(24,sr,true); dv.setUint32(28,sr*2,true); dv.setUint16(32,2,true); dv.setUint16(34,16,true);
-  ws(36,'data'); dv.setUint32(40,n*2,true);
-  for(let i=0;i<n;i++){
-    const a=Math.min(1, i/(sr*0.004), (n-i)/(sr*0.03));
-    dv.setInt16(44+i*2, Math.sin(2*Math.PI*freq*i/sr)*vol*a*32767, true);
-  }
-  return URL.createObjectURL(new Blob([buf],{type:'audio/wav'}));
-}
-function initAudio(){
-  try {
-    if (!beepAudio){ beepAudio = new Audio(makeBeepURL(880,200,0.9)); beepAudio.preload='auto'; }
-    beepAudio.muted = true;
-    const pr = beepAudio.play();
-    if (pr && pr.then) pr.then(()=>{ beepAudio.pause(); beepAudio.currentTime=0; beepAudio.muted=false; }).catch(()=>{ beepAudio.muted=false; });
-    else beepAudio.muted=false;
-  } catch(e){}
-}
-function beep(){
-  try { if (beepAudio){ beepAudio.currentTime=0; const pr=beepAudio.play(); if(pr&&pr.catch) pr.catch(()=>{}); } } catch(e){}
-}
-function flashOK(){
-  let f = document.getElementById('okFlash');
-  if (!f){
-    f = document.createElement('div'); f.id = 'okFlash';
-    f.style.cssText = 'position:fixed;inset:0;background:#16a34a;opacity:0;pointer-events:none;z-index:9999;transition:opacity .12s';
-    document.body.appendChild(f);
-  }
-  f.style.opacity = '0.55';
-  setTimeout(()=>{ f.style.opacity = '0'; }, 140);
-}
-
-let paused = false;
-let pendingQR = null;
-$('btnScan').onclick = () => {
-  initAudio();
-  if (scanning) stopScan();
-  else startScan();
-};
-function setScanBtn(mode){
-  const b = $('btnScan');
-  if (mode==='live'){ b.textContent='⏹ Dừng camera'; b.style.background='#dc2626'; }
-  else { b.textContent='▶ Bắt đầu Scan QR'; b.style.background=''; }
-}
-function startScan(){
-  if (!qr) qr = new Html5Qrcode('reader');
-  qr.start({ facingMode:'environment' }, { fps:10, qrbox:{width:220,height:220} },
-    txt => {
-      if (paused) return;
-      const t = Date.now();
-      if (txt===lastCode && t-lastT<1500) return;
-      lastCode = txt; lastT = t;
-      onScanCatch(txt);
-    }, ()=>{}
-  ).then(()=>{ scanning=true; paused=false; setScanBtn('live'); $('status').textContent='Đang quét... đưa QR (LSX/Khối lượng) vào khung'; })
-   .catch(e=>$('status').textContent='⚠ Không mở được camera (cần HTTPS). '+e);
-}
-function onScanCatch(txt){
-  const p = parseQR(txt);
-  if (!p){
-    if (navigator.vibrate) navigator.vibrate([60,40,60]);
-    toast('⚠ QR sai format: "'+txt+'" (cần dạng LSX/KhốiLượng)');
-    $('status').textContent = '⚠ Bỏ qua QR sai format: ' + txt;
-    return;
-  }
-  if (batch.some(b => b.data === p.data || b.lsx === p.lsx)){
-    if (navigator.vibrate) navigator.vibrate([60,40,60]);
-    toast('LSX "'+p.lsx+'" đã có trong cuộn này');
-    $('status').textContent = 'Đã có LSX ' + p.lsx + ' — bỏ qua';
-    return;
-  }
-  batch.push(p);
-  renderBatch();
-  try { qr.pause(true); } catch(e){}
-  paused = true;
-  pendingQR = null;
-  beep(); flashOK(); if (navigator.vibrate) navigator.vibrate(110);
-  $('pendingBox').textContent = '✓ Đã thêm: ' + p.lsx + ' — ' + p.klyc + ' kg';
-  $('pendingBox').classList.remove('hide');
-  $('btnAddPending').classList.remove('hide');
-  $('status').textContent = 'Đã thêm vào cuộn. Bấm "Scan LSX khác" để quét tiếp.';
-}
-$('btnAddPending').onclick = () => {
-  $('pendingBox').classList.add('hide');
-  $('btnAddPending').classList.add('hide');
-  lastCode = '';
-  resumeScan();
-};
-function resumeScan(){
-  if (!qr || !scanning) return;
-  try { qr.resume(); } catch(e){}
-  paused = false; lastCode = '';
-  $('status').textContent = 'Đang quét... đưa QR tiếp theo vào khung';
-}
-function stopScan(){
-  if (qr && scanning) return qr.stop().then(()=>{
-    scanning=false; paused=false; pendingQR=null;
-    $('pendingBox').classList.add('hide'); $('btnAddPending').classList.add('hide');
-    setScanBtn('idle'); $('status').textContent='Đã dừng camera';
-  });
-  return Promise.resolve();
-}
-
-function parseQR(txt){
-  txt = ('' + (txt==null?'':txt)).trim();
-  const parts = txt.split('/');
-  if (parts.length !== 2) return null;
-  const lsx = parts[0].trim();
-  const klStr = parts[1].trim();
-  const kl = Number(klStr);
-  if (!lsx || !klStr || !isFinite(kl) || kl <= 0) return null;
-  return { data: txt, lsx: lsx, klyc: kl };
-}
-function tryAddData(txt, fromScan){
-  const p = parseQR(txt);
-  if (!p){
-    if (fromScan && navigator.vibrate) navigator.vibrate([60,40,60]);
-    toast('⚠ QR sai format: "'+txt+'" (cần dạng LSX/KhốiLượng)');
-    $('status').textContent = '⚠ Bỏ qua QR sai format: ' + txt;
-    return false;
-  }
-  if (batch.some(b => b.data === p.data || b.lsx === p.lsx)){
-    if (fromScan && navigator.vibrate) navigator.vibrate([60,40,60]);
-    toast('LSX "'+p.lsx+'" đã có trong cuộn này');
-    $('status').textContent = 'Đã có LSX ' + p.lsx + ' — bỏ qua';
-    return false;
-  }
-  batch.push(p);
-  renderBatch();
-  if (fromScan){ beep(); flashOK(); if (navigator.vibrate) navigator.vibrate(110); }
-  $('status').textContent = '✓ Đã thêm ' + p.lsx + ' (' + p.klyc + ') — tiếp tục quét...';
-  return true;
-}
-
-// Nhập tay
-$('btnManual').onclick = () => {
-  const v = $('manualFld').value.trim();
-  if (!v){ $('manualFld').focus(); return; }
-  if (tryAddData(v, false)) $('manualFld').value='';
-  $('manualFld').focus();
-};
-$('manualFld').addEventListener('keydown', e => { if (e.key==='Enter'){ e.preventDefault(); $('btnManual').click(); } });
-
-function renderBatch(){
-  const has = batch.length>0;
-  $('batchCount').textContent = 'Cuộn này: ' + batch.length + ' QR';
-  $('batchEmpty').style.display = has ? 'none' : 'block';
-  const tb = $('batchBody'); tb.innerHTML='';
-  batch.forEach((b,i) => {
-    const tr = document.createElement('tr');
-    tr.innerHTML = `<td>${i+1}</td><td>${esc(b.lsx)}</td><td>${esc(b.klyc)}</td><td class="del" data-i="${i}">✕</td>`;
-    tb.appendChild(tr);
-  });
-  tb.querySelectorAll('.del').forEach(el => el.onclick = e => { batch.splice(+e.target.dataset.i,1); lastCode=''; renderBatch(); });
-}
-
-// ---------- Dừng scan -> nhập khối lượng cuộn ----------
-$('btnStopScan').onclick = async () => {
-  if (!batch.length){ toast('Chưa quét QR nào cho cuộn này'); return; }
-  await stopScan();
-  const uniq = new Set(batch.map(b=>b.lsx)).size;
-  curMethod = uniq >= 2 ? 'GỘP' : 'ĐƠN';
-  const sumY = batch.reduce((a,b)=>a+b.klyc,0);
-  $('methodBox').textContent = '📦 ' + batch.length + ' LSX · Phương thức: ' + curMethod + ' · Tổng yêu cầu: ' + sumY + ' kg';
-  $('klcuonFld').value='';
-  showPhase('weight');
-  setTimeout(()=>$('klcuonFld').focus(), 200);
-};
-$('btnBackToScan').onclick = () => { showPhase('scan'); $('status').textContent='Quét tiếp QR cho cuộn này, hoặc bấm Dừng scan.'; };
-
-// ---------- Thuật toán phân bổ Kết quả SX ----------
-function allocate(C){
-  const Y = batch.map(b=>b.klyc);
-  const J = Y.slice();
-  const sumY = Y.reduce((a,b)=>a+b,0);
-  let diff = C - sumY;
-  if (diff >= 0){
-    J[J.length-1] += diff;
-  } else {
-    let need = -diff;
-    for (let i=J.length-1; i>=0 && need>0; i--){
-      const take = Math.min(J[i], need);
-      J[i] -= take; need -= take;
+      // Nếu có phân quyền → hiện màn hình chọn module
+      // Nếu không (chưa cấu hình Master Sheet) → vào thẳng SX như cũ
+      if(state.permissions.length > 0){
+        enterModuleScreen();
+      } else {
+        enterMayScreen();
+      }
+    } else {
+      loginSetErr(out.error || "Đăng nhập thất bại");
+      btn.disabled=false; btn.textContent=oldTxt;
     }
+  }catch(e){
+    loginSetErr("Không kết nối được máy chủ. Kiểm tra mạng và thử lại.");
+    btn.disabled=false; btn.textContent=oldTxt;
   }
-  return J;
 }
 
-// ---------- Xem bảng phân bổ ----------
-$('btnCalc').onclick = () => {
-  const raw = $('klcuonFld').value.trim();
-  const C = Number(raw);
-  if (!raw || !isFinite(C) || C < 0){ toast('Nhập khối lượng cuộn hợp lệ'); $('klcuonFld').focus(); return; }
-  curKlcuon = C;
-  curAlloc = allocate(C);
-  const sumY = batch.reduce((a,b)=>a+b.klyc,0);
-  const sumJ = curAlloc.reduce((a,b)=>a+b,0);
-  $('previewInfo').textContent = '📦 ' + curMethod + ' · Khối lượng cuộn: ' + C + ' kg · Tổng yêu cầu: ' + sumY + ' kg';
-  const tb = $('previewBody'); tb.innerHTML='';
-  batch.forEach((b,i) => {
-    const tr = document.createElement('tr');
-    tr.innerHTML = `<td>${esc(b.lsx)}</td><td>${esc(b.klyc)}</td><td><b>${esc(curAlloc[i])}</b></td>`;
-    tb.appendChild(tr);
-  });
-  let sumLine = 'Tổng phân bổ: ' + sumJ + ' / ' + C + ' kg';
-  if (sumJ !== C) sumLine += ' ⚠';
-  $('previewSum').textContent = sumLine;
-  showPhase('preview');
-};
-$('btnBackToWeight').onclick = () => { showPhase('weight'); setTimeout(()=>$('klcuonFld').focus(),150); };
-
-// ---------- Hàng đợi gửi (offline-safe) ----------
-function renderQueueBadge(){
-  const el = $('queueBar');
-  if (!queue.length){ el.classList.add('hide'); return; }
-  el.classList.remove('hide'); el.classList.remove('ok');
-  const n = queue.length;
-  if (!navigator.onLine) el.textContent = '📦 ' + n + ' cuộn đã lưu tạm — chưa có mạng, sẽ tự gửi khi có mạng';
-  else if (flushing)     el.textContent = '📤 Đang gửi... còn ' + n + ' cuộn chờ';
-  else                   el.textContent = '⏳ ' + n + ' cuộn chờ gửi';
+function prefillLastUsername(){
+  const last = localStorage.getItem(LS_LAST_USERNAME);
+  if(last) document.getElementById("loginUser").value = last;
 }
-async function flushQueue(){
-  if (flushing) return;
-  if (!queue.length){ renderQueueBadge(); return; }
-  if (!navigator.onLine || !sheetUrl){ renderQueueBadge(); return; }
-  flushing = true; renderQueueBadge();
-  while (queue.length){
-    const item = queue[0];
-    try {
-      const res = await fetch(sheetUrl, {
-        method:'POST',
-        headers:{'Content-Type':'text/plain;charset=utf-8'},
-        body: JSON.stringify({ batchId: item.batchId || '', type: item.type || '', rows: item.rows })
-      });
-      const txt = await res.text();
-      let ok = false;
-      try { ok = JSON.parse(txt).ok === true; } catch(_) { ok = /(^|[^A-Za-z])OK([^A-Za-z]|$)/i.test(txt); }
-      if (ok){ queue.shift(); saveQ(); sentRolls++; renderQueueBadge(); }
-      else { break; }
-    } catch(e){
-      break;
-    }
-  }
-  flushing = false;
-  if (!queue.length){
-    const el = $('queueBar');
-    el.classList.remove('hide'); el.classList.add('ok'); el.textContent = '✓ Đã gửi hết, không còn cuộn chờ';
-    setTimeout(()=>{ if(!queue.length) el.classList.add('hide'); }, 4000);
+
+function logout(){
+  state.user=null;
+  state.maNV=null;
+  state.username=null;
+  state.permissions=[];
+  state.currentMay=null;
+  state.currentCN=null;
+  state.fromScan=false;
+  sessionStorage.removeItem("ghinhan_session");
+  stopCamera();
+  show("screenLogin");
+  loginSetErr("");
+  document.getElementById("loginPass").value="";
+  prefillLastUsername();
+  setTimeout(()=>document.getElementById(document.getElementById("loginUser").value?"loginPass":"loginUser").focus(), 150);
+}
+
+/** Quay về module screen (nếu có phân quyền) hoặc logout. Dùng cho nút "Quay lại" trên screenScan. */
+function goHome(){
+  stopCamera();
+  if(state.permissions.length > 0){
+    state.currentMay=null; state.currentCN=null;
+    enterModuleScreen();
   } else {
-    renderQueueBadge();
+    logout();
   }
 }
 
-// ---------- Xác nhận: lưu vào hàng đợi rồi cố gửi ----------
-$('btnConfirmSend').onclick = async () => {
-  if (!batch.length){ toast('Chưa có dữ liệu'); return; }
-  const time = nowStr();
-  const rows = batch.map((b,i)=>({
-    time: time, loai: sel.mode, cn: sel.cn, may: sel.may,
-    data: b.data, lsx: b.lsx, klyc: b.klyc,
-    phuongthuc: curMethod, klcuon: curKlcuon, ketqua: curAlloc[i]
-  }));
-  // Luôn lưu vào máy trước -> không bao giờ mất dữ liệu dù mất mạng
-  queue.push({ ts: Date.now(), batchId: genId(), rows: rows });
-  saveQ();
-  // Reset cuộn & về màn hình Thổi/In ngay (không chờ mạng)
-  try { await stopScan(); } catch(e){}
-  batch=[]; curAlloc=[]; curKlcuon=0; curMethod=''; lastCode=''; pendingQR=null; paused=false;
-  scanning=false;
-  $('pendingBox').classList.add('hide'); $('btnAddPending').classList.add('hide');
-  renderBatch();
-  showPhase('scan');
-  sel = { mode:'', cn:'', may:'' };
-  updateCrumbs();
-  show('step1');
-  renderQueueBadge();
-  if (navigator.onLine){ toast('📤 Đã lưu — đang gửi cuộn (' + rows.length + ' LSX)'); flushQueue(); }
-  else { toast('📦 Chưa có mạng — đã lưu tạm trên máy, sẽ tự gửi khi có mạng'); }
+/* ══════════════════════════════════════════════════
+   SCREEN 1b: Chọn Module
+══════════════════════════════════════════════════ */
+/* ── Danh sách 11 module (hiển thị grid) ── */
+const ALL_MODULES = [
+  { ma: "PD", ten: "Sản xuất",     icon: "🏭" },
+  { ma: "WH", ten: "Kho",          icon: "📦" },
+  { ma: "PU", ten: "Mua hàng",     icon: "🛒" },
+  { ma: "SA", ten: "Bán hàng",     icon: "💰" },
+  { ma: "QC", ten: "Chất lượng",   icon: "✅" },
+  { ma: "MA", ten: "Bảo dưỡng",    icon: "🔧" },
+  { ma: "QT", ten: "Kế toán QT",   icon: "📊" },
+  { ma: "AD", ten: "Admin",        icon: "⚙️" },
+  { ma: "HR", ten: "Nhân sự",      icon: "👥" },
+  { ma: "PL", ten: "Kế hoạch",     icon: "📅" },
+  { ma: "DL", ten: "Giao hàng",    icon: "🚚" }
+];
+const MODULE_ICONS = {};
+ALL_MODULES.forEach(m => MODULE_ICONS[m.ma] = m.icon);
+
+const QUYEN_LABELS = {
+  V: "Xem", C: "Tạo", E: "Sửa",
+  R: "Kiểm tra", A: "Phê duyệt", D: "Xóa",
+  // Tương thích ngược format cũ
+  Xem: "Xem", Tao: "Tạo", Sua: "Sửa",
+  KiemTra: "Kiểm tra", PheDuyet: "Phê duyệt", Xoa: "Xóa"
 };
 
-// ---------- Nhập Phế ----------
-$('btnPhe').onclick = () => {
-  const go = () => { appMode = 'phe'; show('step6'); };
-  if (isAuthed) { go(); return; }
-  pinTarget = 'sx';
-  pendingAction = go;
-  $('pinInput').value = '';
-  $('pinModal').classList.add('show');
-  setTimeout(() => $('pinInput').focus(), 200);
-};
-// Chọn công đoạn phế
-document.querySelectorAll('[data-phe-mode]').forEach(b => b.onclick = () => {
-  sel.mode = b.dataset.pheMode; sel.cn=''; sel.may='';
-  updateCrumbs();
-  if (!masters) { toast('Chưa có danh sách. Bấm ⚙️ để kết nối & tải.'); openSettings(); return; }
-  renderPicker('cn');
-  show('step2');
-});
-$('pheBack1').onclick = () => { appMode = 'sx'; show('step1'); };
-
-function enterPheForm(){
-  $('pheCtx').innerHTML = '🗑️ <b>Nhập Phế</b> &nbsp;|&nbsp; <b>'+esc(sel.mode)+'</b> &nbsp;|&nbsp; 👷 <b>'+esc(sel.cn)+'</b> &nbsp;|&nbsp; ⚙️ <b>'+esc(sel.may)+'</b>';
-  $('pheTron').value = '';
-  $('pheMau').value = '';
-  show('step7');
-  setTimeout(() => $('pheTron').focus(), 200);
+/** Nhóm permissions theo module code. quyen giờ là array ["Xem","Tao",...] */
+function groupPermsByModule(){
+  const g = {};
+  state.permissions.forEach(p => {
+    if(!g[p.module]) g[p.module] = { tenModule: p.tenModule, allQuyen: {}, funcs: [] };
+    // Gộp tất cả quyền của module
+    const qa = Array.isArray(p.quyen) ? p.quyen : [p.quyen];
+    qa.forEach(q => { if(q) g[p.module].allQuyen[q] = true; });
+    g[p.module].funcs.push(p);
+  });
+  return g;
 }
-$('pheBack3').onclick = () => { renderPicker('cn'); show('step2'); };
-$('pheTron').addEventListener('keydown', e => { if (e.key==='Enter'){ e.preventDefault(); $('pheMau').focus(); } });
-$('pheMau').addEventListener('keydown', e => { if (e.key==='Enter'){ e.preventDefault(); $('btnPheSend').click(); } });
 
-$('btnPheSend').onclick = () => {
-  const tron = Number($('pheTron').value) || 0;
-  const mau = Number($('pheMau').value) || 0;
-  if (tron <= 0 && mau <= 0){ toast('Nhập ít nhất 1 loại phế'); return; }
-  const time = nowStr();
-  const row = {
-    time: time, loai: sel.mode, cn: sel.cn, may: sel.may,
-    pheTron: tron, pheMau: mau
-  };
-  queue.push({ ts: Date.now(), batchId: genId(), type: 'phe', rows: [row] });
-  saveQ();
-  toast('✅ Đã lưu phế: Trơn ' + tron + ' kg, Màu ' + mau + ' kg');
-  // Reset về step6 để nhập tiếp nếu cần
-  sel = { mode:'', cn:'', may:'' };
-  updateCrumbs();
-  appMode = 'sx';
-  show('step1');
-  renderQueueBadge();
-  if (navigator.onLine) flushQueue();
-};
+/** Hiển thị quyền dạng tags */
+function quyenTags(quyenArr, small){
+  const arr = Array.isArray(quyenArr) ? quyenArr : [quyenArr];
+  return arr.map(q => '<span class="q-tag'+(small?' q-sm':'')+'">'+ esc(QUYEN_LABELS[q]||q) +'</span>').join(' ');
+}
 
-// ---------- PIN & Dashboard ----------
-$('btnDashboard').onclick = () => {
-  openDashboard();
-};
-$('pinCancel').onclick = () => $('pinModal').classList.remove('show');
-$('pinOk').onclick = checkPIN;
-$('pinInput').addEventListener('keydown', e => { if (e.key==='Enter'){ e.preventDefault(); checkPIN(); } });
+function enterModuleScreen(){
+  document.getElementById("modUser").textContent = state.user;
+  document.getElementById("modSubtitle").textContent = "Chọn module";
+  const grid = document.getElementById("moduleGrid");
+  const noAccess = document.getElementById("moduleNoAccess");
+  grid.innerHTML = "";
 
-function checkPIN(){
-  const input = $('pinInput').value.trim();
-  if (!input){ toast('Vui lòng nhập PIN'); return; }
-  const targetPIN = pinTarget === 'chuyen' ? storedPINChuyen : storedPIN;
-  if (!targetPIN) {
-    toast('⚠ Chưa có PIN. Bấm ⚙️ tải lại danh sách để lấy PIN từ Sheet.');
+  const permGroups = groupPermsByModule();
+  const hasAny = state.permissions.length > 0;
+  noAccess.style.display = hasAny ? "none" : "block";
+
+  ALL_MODULES.forEach(mod => {
+    const hasAccess = !!permGroups[mod.ma];
+
+    const card = document.createElement("div");
+    card.className = "mod-card" + (hasAccess ? "" : " locked");
+    card.innerHTML =
+      '<div class="mc-icon">' + mod.icon + '</div>' +
+      '<div class="mc-name">' + esc(mod.ten) + '</div>' +
+      (hasAccess
+        ? '<div style="text-align:center">' + quyenTags(Object.keys(permGroups[mod.ma].allQuyen), true) + '</div>'
+        : '<div class="mc-lock">🔒</div>');
+
+    if(hasAccess){
+      card.onclick = () => openModuleFuncs(mod.ma, permGroups[mod.ma]);
+    } else {
+      card.onclick = () => showToast("Bạn chưa có quyền truy cập " + mod.ten, 2000);
+    }
+    grid.appendChild(card);
+  });
+
+  show("screenModules");
+}
+
+/** Mở sub-screen chức năng trong 1 module */
+function openModuleFuncs(modCode, group){
+  const mod = ALL_MODULES.find(m => m.ma === modCode) || {};
+
+  // Nếu module chỉ có 1 chức năng → vào thẳng, không hiện sub-screen
+  if(group.funcs.length === 1){
+    selectFunction(group.funcs[0]);
     return;
   }
-  if (input === targetPIN) {
-    if (pinTarget === 'chuyen') isAuthChuyen = true;
-    else isAuthed = true;
-    $('pinModal').classList.remove('show');
-    if (pendingAction) { pendingAction(); pendingAction = null; }
-  } else {
-    toast('❌ Sai PIN');
-    $('pinInput').value = '';
-    $('pinInput').focus();
-  }
+
+  document.getElementById("funcModIcon").textContent = mod.icon || "📋";
+  document.getElementById("funcModName").textContent = group.tenModule || mod.ten || modCode;
+  document.getElementById("funcSubtitle").textContent =
+    group.funcs.length + " chức năng";
+
+  const list = document.getElementById("funcList");
+  list.innerHTML = "";
+
+  group.funcs.forEach(p => {
+    const btn = document.createElement("button");
+    btn.className = "func-btn";
+    btn.innerHTML =
+      '<div class="func-icon">' + (mod.icon || "📋") + '</div>' +
+      '<div class="func-info">' +
+        '<div class="func-name">' + esc(p.chucNang || p.tenModule) + '</div>' +
+        '<div class="func-desc">' + quyenTags(p.quyen, true) + '</div>' +
+      '</div>';
+    btn.onclick = () => selectFunction(p);
+    list.appendChild(btn);
+  });
+
+  show("screenFuncs");
 }
 
-function timeStr(){ const d=new Date(),p=n=>String(n).padStart(2,'0'); return p(d.getHours())+':'+p(d.getMinutes()); }
-let dashTotal = 0;   // tổng số LSX trên Sheet
-
-// Gọi JSONP dùng chung: url (chưa có callback), timeout ms, hàm khi OK / khi lỗi
-function jsonp(url, timeoutMs, onOk, onErr){
-  const cbName = '__tksx_cb' + Date.now() + Math.floor(Math.random()*10000);
-  const s = document.createElement('script');
-  let done = false;
-  window[cbName] = function(data){ done = true; cleanup(); onOk(data); };
-  s.onerror = function(){ if (!done){ cleanup(); onErr && onErr(); } };
-  s.src = url + (url.indexOf('?') === -1 ? '?' : '&') + 'callback=' + cbName + '&t=' + Date.now();
-  document.body.appendChild(s);
-  setTimeout(function(){ if (!done){ done = true; cleanup(); onErr && onErr(); } }, timeoutMs);
-  function cleanup(){ try{ delete window[cbName]; }catch(e){ window[cbName]=undefined; } if(s.parentNode) s.parentNode.removeChild(s); }
+function backToModules(){
+  enterModuleScreen();
 }
 
-function applyFull(p){
-  dashData = p.rows || [];
-  dashTotal = Number(p.total) || dashData.length;
-  khUrl = p.khUrl || '';
-  khCol = p.khCol || 'A';
-}
+function selectFunction(p){
+  const url = (p.url || "").trim().toLowerCase();
+  const quyen = Array.isArray(p.quyen) ? p.quyen : [p.quyen];
 
-// Mô hình "tải 1 lần": toàn bộ Master lưu trong máy (localStorage).
-// Mỗi lần mở chỉ hỏi server "phiên bản dữ liệu" (siêu nhẹ) — trùng thì khỏi tải lại.
-function openDashboard(){
-  show('step5');
-  $('dashEmpty').classList.add('hide');
-
-  // 1) Hiện NGAY dữ liệu trong máy (nếu có)
-  let localData = null;
-  try { localData = JSON.parse(localStorage.getItem(DASHFULL) || 'null'); } catch(e){}
-  if (localData && localData.rows && localData.rows.length){
-    applyFull(localData);
-    renderDashboard();
-    $('dashStatus').textContent = '📥 Dữ liệu lúc ' + (localData.time || '') + ' — đang kiểm tra bản mới...';
-  } else {
-    dashData = []; dashTotal = 0;
-    $('dashBody').innerHTML = '';
-    $('dashNote').textContent = '';
-    $('dashSummary').innerHTML = '<div class="sbox"><div class="slbl">Đang tải lần đầu — có thể mất chút thời gian...</div></div>';
-    $('dashStatus').textContent = '';
-  }
-  if (!sheetUrl){ toast('Chưa có link Sheet'); return; }
-
-  // 2) Hỏi phiên bản dữ liệu (nhẹ, ~1-2 giây)
-  jsonp(sheetUrl + '?action=version', 20000, function(res){
-    if (localData && localData.v && res.v === localData.v){
-      $('dashStatus').textContent = '✓ Dữ liệu mới nhất (kiểm tra lúc ' + timeStr() + ')';
+  if(url === "index.html" || url.startsWith("index.html?")){
+    // Nhập liệu SX cần quyền "C" (Create)
+    if(!quyen.includes("C")){
+      showToast("Bạn chỉ có quyền Xem, không có quyền Tạo dữ liệu", 3000);
       return;
     }
-    // 3) Có thay đổi (hoặc chưa có dữ liệu trong máy) -> tải toàn bộ
-    if (localData) $('dashStatus').textContent = '⬇ Có dữ liệu mới — đang tải...';
-    jsonp(sheetUrl + '?action=masterall', 60000, function(data){
-      const pack = { v: data.v || '0', time: timeStr(), rows: data.rows || [], total: data.total || 0, khUrl: data.khUrl || '', khCol: data.khCol || 'A' };
-      applyFull(pack);
-      try { localStorage.setItem(DASHFULL, JSON.stringify(pack)); } catch(e){}
-      renderDashboard();
-      $('dashStatus').textContent = '✓ Đã cập nhật lúc ' + timeStr();
-    }, function(){ dashFail(localData); });
-  }, function(){ dashFail(localData); });
-
-  function dashFail(localData){
-    if (localData && localData.rows) $('dashStatus').textContent = '⚠ Không kiểm tra được bản mới — đang xem dữ liệu lúc ' + (localData.time || '');
-    else { $('dashSummary').innerHTML = ''; toast('⚠ Không tải được dữ liệu Master'); }
+    // Chức năng có ?branch=CT|GTB (VD: PD_A01 → index.html?branch=CT) → vào thẳng nhánh đó.
+    // URL không có branch (kiểu cũ PD_GNSX) → hiện màn hình chọn nhánh.
+    const m = /[?&]branch=(CT|GTB)\b/i.exec(url);
+    if(m){
+      state.branchLocked = true;   // nhánh do phân quyền quyết định → nút ← về menu, không về màn chọn nhánh
+      selectBranch(m[1].toUpperCase());
+    } else {
+      state.branchLocked = false;
+      show("screenBranch"); // chọn nhánh: Cắt/Thủ công hoặc Giấy/Thùng/Bìa
+    }
+  } else if(url === "tien-do.html"){
+    // Tra cứu tiến độ chỉ cần quyền "V" (View)
+    window.location.href = "tien-do.html";
+  } else if(url){
+    window.location.href = p.url;
+  } else {
+    showToast("Chức năng \"" + esc(p.chucNang || p.tenModule) + "\" chưa được phát triển", 3000);
   }
 }
 
-let dashPendingOnly = false; // đang bật chế độ "chỉ xem LSX còn thiếu"?
+/* ══════════════════════════════════════════════════
+   SCREEN 2: Chọn Máy
+══════════════════════════════════════════════════ */
+async function loadMachines(force){
+  const statusEl = document.getElementById("mayStatus");
+  const retry    = document.getElementById("mayRetry");
+  retry.style.display="none";
 
-function renderDashboard(){
-  const q = ($('dashSearch').value || '').toLowerCase().trim();
-  // Lọc trên TOÀN BỘ dữ liệu trong máy — gõ từng số là lọc ngay, không chờ mạng
-  let filtered = dashData;
-  if (dashFilter !== 'all') filtered = filtered.filter(r => r.loai === dashFilter);
-  if (q) filtered = filtered.filter(r =>
-    (r.lsx + ' ' + r.lsxGoc + ' ' + (r.kh || '')).toLowerCase().indexOf(q) !== -1
-  );
-
-  // Summary: tính trên toàn bộ kết quả lọc (không chỉ phần hiển thị)
-  const totalLSX = filtered.length;
-  const done = filtered.filter(r => r.conLai <= 0).length;
-  const pending = totalLSX - done;
-  $('dashSummary').innerHTML =
-    '<div class="sbox"><div class="snum">' + totalLSX + '</div><div class="slbl">Tổng LSX</div></div>' +
-    '<div class="sbox"><div class="snum">' + done + '</div><div class="slbl">Đã đủ</div></div>' +
-    '<div class="sbox" id="boxPending" style="cursor:pointer' + (dashPendingOnly ? ';background:#fef3c7;border-color:#fcd34d' : '') + '">' +
-      '<div class="snum">' + pending + '</div><div class="slbl">Còn thiếu' + (dashPendingOnly ? ' ✓' : ' 👆') + '</div></div>';
-  // Bấm ô "Còn thiếu" -> bật/tắt chế độ chỉ xem LSX còn thiếu
-  document.getElementById('boxPending').onclick = () => { dashPendingOnly = !dashPendingOnly; renderDashboard(); };
-
-  // Chế độ "còn thiếu": hiện TẤT CẢ LSX thiếu (không giới hạn 300)
-  let view = filtered;
-  if (dashPendingOnly) view = filtered.filter(r => (Number(r.conLai) || 0) > 0);
-  const shown = dashPendingOnly ? view : view.slice(0, 300);
-
-  if (dashPendingOnly) {
-    $('dashNote').textContent = '📄 Đang xem ' + view.length + ' LSX còn thiếu — bấm lại ô "Còn thiếu" để bỏ lọc';
-  } else if (!q && view.length > shown.length) {
-    $('dashNote').textContent = '📄 Đang hiển thị 300 LSX gần nhất (tổng ' + view.length + ' LSX) — tìm kiếm sẽ tự lọc trên toàn bộ Master';
-  } else if (view.length > shown.length) {
-    $('dashNote').textContent = '📄 Hiển thị ' + shown.length + ' / ' + view.length + ' kết quả — gõ thêm số để thu hẹp';
+  const cached = JSON.parse(localStorage.getItem(LS_MACHINES)||"null");
+  if(Array.isArray(cached)&&cached.length&&!force){
+    allMachines=cached;
+    renderPicker("mayList","searchMay",byBranch(allMachines),selectMachine,"mayStatus");
+    statusEl.style.display="none";
   } else {
-    $('dashNote').textContent = view.length ? '📄 ' + view.length + ' kết quả — mới nhất trên đầu' : '';
+    statusEl.style.display="block";
+    statusEl.textContent="Đang tải danh sách máy...";
   }
 
-  // Table
-  const tb = $('dashBody');
-  tb.innerHTML = '';
-  if (!shown.length){
-    $('dashEmpty').classList.remove('hide');
+  try{
+    const data = await apiFetch("machines");
+    const list = data.machines||[];
+    if(list.length){
+      allMachines=list;
+      localStorage.setItem(LS_MACHINES,JSON.stringify(list));
+      renderPicker("mayList","searchMay",byBranch(allMachines),selectMachine,"mayStatus");
+      statusEl.style.display="none";
+    } else if(!allMachines.length){
+      statusEl.textContent="Danh sách máy trống. Kiểm tra tab MA_MAY.";
+      retry.style.display="block";
+    }
+  }catch(e){
+    if(!allMachines.length){
+      statusEl.textContent="Không tải được danh sách máy.";
+      retry.style.display="block";
+    } else {
+      statusEl.style.display="none";
+    }
+  }
+}
+
+function filterMachines(q){
+  q=(q||"").toLowerCase();
+  renderPicker("mayList","searchMay",
+    byBranch(allMachines).filter(m=>(m.ma+m.ten).toLowerCase().includes(q)),
+    selectMachine,"mayStatus",true);
+}
+
+function selectBranch(b){
+  state.branch = b;
+  enterMayScreen();
+}
+
+function enterMayScreen(){
+  document.getElementById("mayContextLabel").textContent =
+    "Nhánh: " + (BRANCH_LABEL[state.branch] || state.branch) +
+    (state.user ? " · " + state.user : "");
+  document.getElementById("searchMay").value="";
+  show("screenMay");
+  loadMachines();
+}
+
+function selectMachine(item){
+  state.currentMay = item;
+  state.currentCN  = null;
+  enterCNScreen();
+}
+
+function backFromMay(){
+  if(state.fromScan){
+    state.currentMay=null; state.currentCN=null;
+    refreshSession(); refreshCount();
+    show("screenScan");
+    setHint("info","Chọn Máy và Công nhân để tiếp tục quét");
+  } else if(state.permissions.length > 0){
+    // Nhánh do phân quyền chỉ định → về menu module; nhánh tự chọn → về màn chọn nhánh
+    if(state.branchLocked) enterModuleScreen();
+    else show("screenBranch");
+  } else {
+    logout();
+  }
+}
+
+/* ══════════════════════════════════════════════════
+   SCREEN 3: Chọn Công nhân
+══════════════════════════════════════════════════ */
+async function loadWorkers(force){
+  const statusEl = document.getElementById("cnStatus");
+  const retry    = document.getElementById("cnRetry");
+  retry.style.display="none";
+
+  const cached = JSON.parse(localStorage.getItem(LS_WORKERS)||"null");
+  if(Array.isArray(cached)&&cached.length&&!force){
+    allWorkers=cached;
+    renderPicker("cnList","searchCN",byBranch(allWorkers),selectWorker,"cnStatus");
+    statusEl.style.display="none";
+  } else {
+    statusEl.style.display="block";
+    statusEl.textContent="Đang tải danh sách công nhân...";
+  }
+
+  try{
+    const data = await apiFetch("workers");
+    const list = data.workers||[];
+    if(list.length){
+      allWorkers=list;
+      localStorage.setItem(LS_WORKERS,JSON.stringify(list));
+      renderPicker("cnList","searchCN",byBranch(allWorkers),selectWorker,"cnStatus");
+      statusEl.style.display="none";
+    } else if(!allWorkers.length){
+      statusEl.textContent="Danh sách công nhân trống. Kiểm tra tab MA_CN.";
+      retry.style.display="block";
+    }
+  }catch(e){
+    if(!allWorkers.length){
+      statusEl.textContent="Không tải được danh sách công nhân.";
+      retry.style.display="block";
+    } else {
+      statusEl.style.display="none";
+    }
+  }
+}
+
+function filterWorkers(q){
+  q=(q||"").toLowerCase();
+  renderPicker("cnList","searchCN",
+    byBranch(allWorkers).filter(w=>(w.ma+w.ten).toLowerCase().includes(q)),
+    selectWorker,"cnStatus",true);
+}
+
+function enterCNScreen(){
+  const may = state.currentMay;
+  document.getElementById("cnContextLabel").textContent =
+    may ? "Máy: "+(may.ten||may.ma) : "Chọn công nhân";
+  document.getElementById("searchCN").value="";
+  show("screenCN");
+  loadWorkers();
+}
+
+function selectWorker(item){
+  state.currentCN = item;
+  enterScan();
+}
+
+/* ══════════════════════════════════════════════════
+   GENERIC PICKER RENDERER
+══════════════════════════════════════════════════ */
+function renderPicker(listId, searchId, items, onSelect, statusId, skipSearch){
+  const wrap = document.getElementById(listId);
+  const search = document.getElementById(searchId);
+  const statusEl = document.getElementById(statusId);
+  if(statusEl) statusEl.style.display="none";
+
+  if(!skipSearch){
+    search.style.display = items.length > 6 ? "block" : "none";
+  }
+  wrap.innerHTML="";
+
+  items.forEach(item=>{
+    const isObj = typeof item === "object";
+    const ma   = isObj ? item.ma   : null;
+    const ten  = isObj ? item.ten  : item;   // string for names
+    const ws   = isObj ? String(item.ws||"").toUpperCase() : "";
+    let note = isObj ? (item.ghiChu||"") : "";
+    if(ws) note = "Tổ: "+ws+(note ? " · "+note : "");
+
+    const btn = document.createElement("button");
+    btn.className="pick-btn";
+    if(ma){
+      btn.innerHTML =
+        '<div class="pb-code">'+esc(ma)+'</div>'+
+        '<div class="pb-name">'+(ten ? esc(ten) : esc(ma))+'</div>'+
+        (note ? '<div class="pb-note">'+esc(note)+'</div>' : '');
+    } else {
+      btn.innerHTML = '<div class="pb-name">'+esc(ten)+'</div>';
+    }
+    btn.onclick = ()=> onSelect(item);
+    wrap.appendChild(btn);
+  });
+
+  if(!items.length){
+    wrap.innerHTML='<div class="pick-status">Không tìm thấy kết quả.</div>';
+  }
+}
+
+/* ══════════════════════════════════════════════════
+   SCREEN 4: Quét Sản phẩm
+══════════════════════════════════════════════════ */
+function enterScan(){
+  document.getElementById("curUser").textContent =
+    state.user + " · " + (BRANCH_LABEL[state.branch] || state.branch);
+  state.fromScan = false;
+  refreshSession();
+  refreshCount();
+  show("screenScan");
+  setHint("info", state.branch === "GTB"
+    ? "Bấm \"Bắt đầu quét\" — KL thực tế sẽ tự lấy theo QR, không cần nhập tay"
+    : "Bấm \"Bắt đầu quét\" để mở camera");
+  document.getElementById("btnScanNext").textContent="Bắt đầu quét";
+}
+
+function setHint(kind,msg){
+  const h=document.getElementById("hint");
+  h.className="hint "+kind; h.textContent=msg;
+}
+
+function refreshSession(){
+  const may = state.currentMay;
+  const cn  = state.currentCN;
+  const mayEl = document.getElementById("valMay");
+  const cnEl  = document.getElementById("valCN");
+
+  if(may){
+    mayEl.innerHTML = esc(may.ten||may.ma)+(may.ten?'<span class="code">'+esc(may.ma)+'</span>':'');
+    document.getElementById("slotMay").classList.add("filled");
+  } else {
+    mayEl.textContent="— chưa chọn —";
+    document.getElementById("slotMay").classList.remove("filled");
+  }
+
+  if(cn){
+    cnEl.innerHTML = esc(cn.ten||cn.ma)+(cn.ten?'<span class="code">'+esc(cn.ma)+'</span>':'');
+    document.getElementById("slotCN").classList.add("filled");
+  } else {
+    cnEl.textContent="— chưa chọn —";
+    document.getElementById("slotCN").classList.remove("filled");
+  }
+}
+
+function refreshCount(){
+  document.getElementById("count").textContent    = state.rows.length;
+  document.getElementById("countBtn").textContent = state.rows.length;
+}
+
+/* Chuyển máy / CN → về lại screenMay */
+function switchMachineCN(){
+  state.fromScan  = true;
+  state.currentMay = null;
+  state.currentCN  = null;
+  stopCamera();
+  scanLocked = true;
+  document.getElementById("btnScanNext").textContent = "Bắt đầu quét";
+  enterMayScreen();
+}
+
+async function startOrNext(){
+  ac();
+  if(!state.currentMay||!state.currentCN){
+    setHint("err","Cần chọn Máy và Công nhân trước");
     return;
   }
-  $('dashEmpty').classList.add('hide');
-  const rnd2 = n => Math.round((Number(n) || 0) * 100) / 100; // làm tròn 2 chữ số thập phân
-  shown.forEach(r => {
-    const tr = document.createElement('tr');
-    const conLai = rnd2(r.conLai);
-    const isWarn = conLai < 0;
-    if (isWarn) tr.className = 'warn';
-    // Bấm LSX -> mở lịch sử SX của LSX đó (từ bảng data)
-    const lsxCell = '<a href="#" class="lsx-hist" data-lsx="' + esc(r.lsx) + '">' + esc(r.lsx) + ' ▸</a>';
-    tr.innerHTML =
-      '<td>' + lsxCell + '</td>' +
-      '<td class="kh">' + esc(r.kh || '') + '</td>' +
-      '<td>' + rnd2(r.klyc) + '</td>' +
-      '<td>' + rnd2(r.tongSX) + '</td>' +
-      '<td class="' + (conLai < 0 ? 'neg' : conLai > 0 ? 'pos' : '') + '">' + conLai + '</td>';
-    tb.appendChild(tr);
-  });
+  if(!scanning){ await startCamera(); }
+  scanLocked=false;
+  lastText="";
+  document.getElementById("btnScanNext").textContent="Quét tiếp";
+  setHint("info","Đưa mã QR sản phẩm vào khung để quét");
 }
 
-// ---------- Lịch sử SX của 1 LSX ----------
-$('dashBody').addEventListener('click', e => {
-  const a = e.target.closest('.lsx-hist');
-  if (!a) return;
-  e.preventDefault();
-  openHistory(a.dataset.lsx);
-});
-$('histClose').onclick = () => $('histModal').classList.remove('show');
+async function startCamera(){
+  try{
+    qr=new Html5Qrcode("reader",{verbose:false});
+    const cfg={fps:10,qrbox:{width:240,height:240},aspectRatio:1.0};
+    await qr.start({facingMode:"environment"},cfg,onScan,()=>{});
+    scanning=true;
+  }catch(e){
+    setHint("err","Không mở được camera. Cấp quyền camera rồi thử lại.");
+    scanning=false;
+  }
+}
 
-function openHistory(lsx){
-  $('histTitle').textContent = '🕘 Lịch sử SX — ' + lsx;
-  $('histBody').innerHTML = '';
-  $('histInfo').textContent = '⏳ Đang tải...';
-  $('histModal').classList.add('show');
-  jsonp(sheetUrl + '?action=history&lsx=' + encodeURIComponent(lsx), 30000, function(data){
-    const rows = data.rows || [];
-    if (!rows.length){
-      $('histInfo').textContent = 'Chưa có lần SX nào của LSX này trong bảng data';
-      return;
+function stopCamera(){
+  if(qr&&scanning){qr.stop().then(()=>{try{qr.clear();}catch(e){}}).catch(()=>{});}
+  scanning=false; scanLocked=true;
+}
+
+function onScan(text){
+  if(scanLocked) return;
+  const now=Date.now();
+  if(text===lastText&&now-lastTextTime<1500) return;
+  lastText=text; lastTextTime=now;
+  handleSP(text.trim());
+}
+
+function lockAfterScan(){
+  scanLocked=true;
+  document.getElementById("btnScanNext").textContent="Quét tiếp";
+}
+
+function handleSP(text){
+  // Chỉ xử lý mã SP: 4 phần cách bởi "/"
+  const parts=text.split("/");
+  if(parts.length!==4||parts.some(p=>!p.trim())){
+    FB.error();
+    setHint("err","Mã không hợp lệ — Sản phẩm cần đúng 4 phần cách bởi /");
+    return;
+  }
+  if(!state.currentMay||!state.currentCN){
+    FB.error();
+    setHint("err","Cần chọn Máy và Công nhân trước");
+    return;
+  }
+  const row={
+    may:    state.currentMay.ma,
+    mayTen: state.currentMay.ten||"",
+    cn:     state.currentCN.ma,
+    cnTen:  state.currentCN.ten||"",
+    sp:     text,
+    kl:     "",
+    note:   "",
+    ts:     new Date().toISOString()
+  };
+  FB.single();
+  lockAfterScan();
+
+  // Nhánh GTB (Giấy/Thùng/Bìa): KL thực tế = KL(QR), không cần nhập tay.
+  // Sau mỗi lần quét GIỮ KHÓA — phải bấm "Quét tiếp" mới nhận QR mới (tránh quét liên tục ngoài ý muốn)
+  if(state.branch === "GTB"){
+    const klQR = numVN(parts[3]);
+    if(!isNaN(klQR) && klQR > 0){
+      row.kl = klQR;
+      state.rows.push(row);
+      saveRows();
+      refreshCount();
+      FB.row();
+      setHint("ok","✓ Đã ghi 1 bao "+klQR+" kg — KL tự động theo QR (tổng "+state.rows.length+"). Bấm \"Quét tiếp\" để quét bao kế");
+      return; // scanLocked vẫn = true (đã khóa ở lockAfterScan)
     }
-    let sum = 0;
-    const tb = $('histBody');
-    rows.forEach(r => {
-      sum += Number(r.ketqua) || 0;
-      const tr = document.createElement('tr');
-      if (r.canhbao) tr.className = 'warn';
-      tr.innerHTML =
-        '<td>' + esc(r.time) + '</td>' +
-        '<td>' + esc(r.loai) + '</td>' +
-        '<td>' + esc(r.cn) + '</td>' +
-        '<td>' + esc(r.may) + '</td>' +
-        '<td><b>' + esc(r.ketqua) + '</b></td>';
-      tb.appendChild(tr);
-    });
-    $('histInfo').textContent = rows.length + ' lần SX · Tổng ' + (Math.round(sum * 100) / 100) + ' kg';
-  }, function(){
-    $('histInfo').textContent = '⚠ Không tải được lịch sử — kiểm tra mạng rồi thử lại';
-  });
-}
-
-// ---------- Sản lượng theo ngày ----------
-function todayISO(){
-  const d = new Date(), p = n => String(n).padStart(2,'0');
-  return d.getFullYear() + '-' + p(d.getMonth()+1) + '-' + p(d.getDate());
-}
-function yesterdayISO(){
-  const d = new Date(); d.setDate(d.getDate() - 1);
-  const p = n => String(n).padStart(2,'0');
-  return d.getFullYear() + '-' + p(d.getMonth()+1) + '-' + p(d.getDate());
-}
-$('btnDaily').onclick = () => {
-  show('step9');
-  $('crumbs').innerHTML = '📈 <b>Thống kê Sản lượng</b>';
-  const t = todayISO();
-  if (!$('dFrom').value) $('dFrom').value = t;
-  if (!$('dTo').value) $('dTo').value = t;
-  loadDaily();
-};
-$('btnDailyLoad').onclick = () => loadDaily();
-$('btnToday').onclick = () => { const t = todayISO(); $('dFrom').value = t; $('dTo').value = t; loadDaily(); };
-$('btnYesterday').onclick = () => { const y = yesterdayISO(); $('dFrom').value = y; $('dTo').value = y; loadDaily(); };
-$('dailyBack').onclick = () => { $('crumbs').innerHTML = ''; show('step1'); };
-
-function loadDaily(){
-  if (!sheetUrl){ toast('Chưa có link Sheet'); return; }
-  let from = $('dFrom').value || todayISO();
-  let to = $('dTo').value || todayISO();
-  if (from > to){ const tmp = from; from = to; to = tmp; $('dFrom').value = from; $('dTo').value = to; }
-  const rangeKey = from + '|' + to;
-
-  // 1) Hiện NGAY bản đã lưu (nếu đúng khoảng ngày này)
-  let cached = null;
-  try { cached = JSON.parse(localStorage.getItem(DAILYCACHE) || 'null'); } catch(e){}
-  const hasCache = cached && cached.key === rangeKey && cached.data;
-  if (hasCache){
-    renderDaily(cached.data);
-    $('dailyStatus').textContent = '📥 Bản lưu lúc ' + (cached.time || '') + ' — đang cập nhật...';
-  } else {
-    $('dailySummary').innerHTML = '<div class="sbox"><div class="slbl">Đang tải...</div></div>';
-    $('dailyContent').classList.add('hide');
-    $('dailyStatus').textContent = '';
+    // QR không có KL hợp lệ → fallback nhập tay
+    setHint("err","QR không có KL hợp lệ — vui lòng nhập tay");
   }
 
-  // 2) Tải bản mới chạy ngầm
-  const cbName = '__tksx_daily_' + Date.now();
-  const s = document.createElement('script');
-  let done = false;
-  window[cbName] = function(data){
-    done = true;
-    cleanup();
-    renderDaily(data);
-    try { localStorage.setItem(DAILYCACHE, JSON.stringify({ key: rangeKey, time: timeStr(), data: data })); } catch(e){}
-    $('dailyStatus').textContent = '✓ Đã cập nhật lúc ' + timeStr();
+  openWeightPopup(row);
+}
+
+function finishSession(){ scanLocked=true; openList(); }
+function backToScan(){
+  show("screenScan");
+  setHint("info","Bấm \"Quét tiếp\" để tiếp tục");
+}
+
+/* ══════════════════════════════════════════════════
+   NHẬP THỦ CÔNG (chỉ nhập SP — Máy/CN đã chọn)
+══════════════════════════════════════════════════ */
+function openManualInput(){
+  if(!state.currentMay||!state.currentCN){
+    setHint("err","Cần chọn Máy và Công nhân trước khi nhập thủ công");
+    return;
+  }
+  const may=state.currentMay, cn=state.currentCN;
+  document.getElementById("manualCtx").textContent =
+    "🏭 "+(may.ten||may.ma)+" · 👷 "+(cn.ten||cn.ma);
+  document.getElementById("mSP").value="";
+  document.getElementById("mKg").value="";
+  document.getElementById("mNote").value="";
+  const errEl=document.getElementById("manualErr");
+  errEl.style.display="none"; errEl.textContent="";
+  document.getElementById("manualOverlay").classList.add("active");
+  setTimeout(()=>document.getElementById("mSP").focus(), 200);
+}
+function closeManual(){
+  document.getElementById("manualOverlay").classList.remove("active");
+}
+function showManualErr(msg){
+  const el=document.getElementById("manualErr");
+  el.textContent=msg; el.style.display="block";
+}
+function submitManual(){
+  const sp   = document.getElementById("mSP").value.trim().toUpperCase();
+  let klVal  = document.getElementById("mKg").value.trim();
+  const note = document.getElementById("mNote").value.trim();
+  if(!sp){ showManualErr("Vui lòng nhập Mã Sản phẩm"); return; }
+  const parts=sp.split("/");
+  if(parts.length!==4||parts.some(p=>!p.trim())){
+    showManualErr("Mã Sản phẩm cần đúng 3 dấu / (4 phần, không để trống)");
+    return;
+  }
+  // Nhánh GTB: nếu bỏ trống KL → tự lấy KL(QR) từ phần 4 của mã SP
+  if(state.branch === "GTB" && !klVal){
+    const klQR = numVN(parts[3]);
+    if(!isNaN(klQR) && klQR > 0) klVal = String(klQR);
+  }
+  if(!klVal || isNaN(numVN(klVal)) || numVN(klVal) <= 0){
+    showManualErr("Vui lòng nhập khối lượng hợp lệ (> 0)");
+    return;
+  }
+  const row={
+    may:    state.currentMay.ma,
+    mayTen: state.currentMay.ten||"",
+    cn:     state.currentCN.ma,
+    cnTen:  state.currentCN.ten||"",
+    sp, kl: numVN(klVal), note,
+    ts: new Date().toISOString()
   };
-  s.onerror = function(){
-    cleanup();
-    if (hasCache) $('dailyStatus').textContent = '⚠ Không cập nhật được — đang xem bản lưu lúc ' + (cached.time || '');
-    else { $('dailySummary').innerHTML=''; toast('⚠ Không tải được báo cáo ngày'); }
-  };
-  s.src = sheetUrl + '?action=daily&from=' + from + '&to=' + to + '&callback=' + cbName + '&t=' + Date.now();
-  document.body.appendChild(s);
-  setTimeout(function(){
-    if(!done){
-      cleanup();
-      if (hasCache) $('dailyStatus').textContent = '⚠ Mạng chậm — đang xem bản lưu lúc ' + (cached.time || '');
-      else { $('dailySummary').innerHTML=''; toast('⚠ Quá thời gian tải báo cáo'); }
-    }
-  }, 30000);
-  function cleanup(){ try{ delete window[cbName]; }catch(e){ window[cbName]=undefined; } if(s.parentNode) s.parentNode.removeChild(s); }
+  state.rows.push(row);
+  saveRows(); refreshCount(); FB.row();
+  closeManual();
+  setHint("ok","✓ Đã nhập thủ công 1 bao (tổng "+state.rows.length+")");
 }
 
-let dailyData = { sx: [], phe: [], sxd: [], phed: [] };  // dữ liệu đã tải — lọc Tổ không cần tải lại
-let dailyFilter = 'all';
-
-function renderDaily(data){
-  data = data || {};
-  dailyData = { sx: data.sx || [], phe: data.phe || [], sxd: data.sxd || [], phed: data.phed || [] };
-  drawDaily();
+/* ══════════════════════════════════════════════════
+   DANH SÁCH + SỬA / XÓA
+══════════════════════════════════════════════════ */
+function openList(){
+  renderList();
+  document.getElementById("sendBanner").className="banner";
+  show("screenList");
 }
 
-// yyyy-mm-dd -> dd/mm/yyyy
-function dmy(k){
-  const p = ('' + (k || '')).split('-');
-  return p.length === 3 ? p[2] + '/' + p[1] + '/' + p[0] : ('' + (k || ''));
+function renderList(){
+  const wrap=document.getElementById("listWrap");
+  if(!state.rows.length){
+    wrap.innerHTML='<div class="empty">Chưa có kết quả nào.<br>Quay lại quét để bắt đầu.</div>';
+    document.getElementById("btnSend").disabled=true;
+    return;
+  }
+  document.getElementById("btnSend").disabled=false;
+  wrap.innerHTML="";
+
+  // Tổng bao / máy / kg
+  const byMay={};
+  let totalKg=0;
+  state.rows.forEach(r=>{
+    const key=r.may;
+    const lbl=r.mayTen ? r.may+" – "+r.mayTen : r.may;
+    if(!byMay[key]) byMay[key]={lbl,count:0,kg:0};
+    byMay[key].count++;
+    if(r.kl) { byMay[key].kg += parseFloat(r.kl)||0; totalKg += parseFloat(r.kl)||0; }
+  });
+  const chips=Object.values(byMay)
+    .map(v=>'<span class="sum-chip"><b>'+esc(v.lbl)+'</b>: '+v.count+' bao'+(v.kg?' · '+v.kg.toFixed(1)+' kg':'')+'</span>')
+    .join('');
+  const sumEl=document.createElement("div");
+  sumEl.className="sum-bar";
+  sumEl.innerHTML='<span class="sum-total">Tổng: <b>'+state.rows.length+'</b> bao'+(totalKg?' · <b>'+totalKg.toFixed(1)+'</b> kg':'')+'</span>'+chips;
+  wrap.appendChild(sumEl);
+
+  // Từng dòng
+  state.rows.forEach((r,i)=>{
+    const mayDisplay = r.mayTen ? r.may+" – "+r.mayTen : r.may;
+    const cnDisplay  = r.cnTen  ? r.cn +" – "+r.cnTen  : r.cn;
+    const card=document.createElement("div");
+    card.className="rowCard";
+    card.innerHTML=
+      '<div class="seq-badge">#'+(i+1)+'</div>'+
+      '<div class="info" onclick="openEdit('+i+')">'+
+        '<div class="top">'+esc(mayDisplay)+' · '+esc(cnDisplay)+'</div>'+
+        '<div class="sub">'+esc(r.sp)+(r.kl?' · <b>'+r.kl+' kg</b>':'')+'</div>'+
+        (r.note?'<div class="note-line">✎ '+esc(r.note)+'</div>':'')+
+      '</div>'+
+      '<button class="del-btn" onclick="deleteRow('+i+')">🗑</button>';
+    wrap.appendChild(card);
+  });
 }
 
-// Thứ tự nhóm: Thổi trước, In sau, loại khác (nếu có) xuống cuối
-function dailyGroups(rows){
-  const order = ['Thổi', 'In'];
-  rows.forEach(r => { if (order.indexOf(r.loai) === -1) order.push(r.loai); });
-  return order;
+function esc(s){return String(s==null?"":s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
+/* Đọc số kiểu Việt lẫn Mỹ: "8,1" và "8.1" đều ra 8.1 */
+function numVN(v){return parseFloat(String(v==null?"":v).trim().replace(",","."));}
+
+function deleteRow(i){
+  if(!confirm("Xóa bao #"+(i+1)+"?")) return;
+  state.rows.splice(i,1);
+  saveRows(); renderList(); refreshCount();
 }
-function grpStyle(g){
-  return g === 'Thổi'
-    ? { bg: '#e0f2fe', color: '#0369a1', icon: '💨' }
-    : g === 'In'
-      ? { bg: '#fef3c7', color: '#92400e', icon: '🖨️' }
-      : { bg: '#f3f4f6', color: '#374151', icon: '⚙️' };
+function openEdit(i){
+  state.editingIndex=i;
+  const r=state.rows[i];
+  eMay.value=r.may; eCN.value=r.cn; eSP.value=r.sp; eKg.value=r.kl||""; eNote.value=r.note||"";
+  document.getElementById("editOverlay").classList.add("active");
+}
+function closeEdit(){
+  document.getElementById("editOverlay").classList.remove("active");
+  state.editingIndex=-1;
+}
+function saveEditing(){
+  const i=state.editingIndex; if(i<0)return;
+  const r=state.rows[i];
+  r.may=eMay.value.trim(); r.cn=eCN.value.trim();
+  r.sp=eSP.value.trim(); r.kl=numVN(eKg.value)||""; r.note=eNote.value.trim();
+  saveRows(); renderList(); refreshCount(); closeEdit();
+}
+function deleteEditing(){
+  const i=state.editingIndex; if(i<0)return;
+  if(!confirm("Xóa dòng này?")) return;
+  state.rows.splice(i,1);
+  saveRows(); renderList(); refreshCount(); closeEdit();
 }
 
-function drawDaily(){
-  const rnd = n => Math.round(n * 100) / 100;
-  const sxAll = dailyData.sx, pheAll = dailyData.phe;
+/* ══════════════════════════════════════════════════
+   GỬI + OFFLINE QUEUE
+══════════════════════════════════════════════════ */
+function saveRows(){ localStorage.setItem(LS_ROWS,JSON.stringify(state.rows)); }
 
-  // Summary: luôn hiện tổng cả 2 tổ (để so sánh nhanh)
-  let tongThoi = 0, tongIn = 0, tongPhe = 0;
-  sxAll.forEach(r => { if (r.loai === 'Thổi') tongThoi += Number(r.tong)||0; else if (r.loai === 'In') tongIn += Number(r.tong)||0; });
-  pheAll.forEach(r => { tongPhe += (Number(r.tron)||0) + (Number(r.mau)||0); });
-  $('dailySummary').innerHTML =
-    '<div class="sbox"><div class="snum">' + rnd(tongThoi) + '</div><div class="slbl">💨 Thổi (kg)</div></div>' +
-    '<div class="sbox"><div class="snum">' + rnd(tongIn) + '</div><div class="slbl">🖨️ In (kg)</div></div>' +
-    '<div class="sbox"><div class="snum" style="color:#dc2626">' + rnd(tongPhe) + '</div><div class="slbl">🗑️ Phế (kg)</div></div>';
+function banner(kind,msg){
+  const b=document.getElementById("sendBanner");
+  b.className="banner show "+kind; b.innerHTML=msg;
+}
 
-  // Áp bộ lọc Tổ
-  const sx = dailyFilter === 'all' ? sxAll : sxAll.filter(r => r.loai === dailyFilter);
-  const phe = dailyFilter === 'all' ? pheAll : pheAll.filter(r => r.loai === dailyFilter);
+function saveToQueue(payload){
+  const q=JSON.parse(localStorage.getItem(LS_QUEUE)||"[]");
+  q.push(payload);
+  localStorage.setItem(LS_QUEUE,JSON.stringify(q));
+}
 
-  // Danh sách ngày trong nhóm (tăng dần)
-  const daysOf = rows => { const d = []; rows.forEach(r => { if (d.indexOf(r.ngay) === -1) d.push(r.ngay); }); d.sort(); return d; };
-
-  // Bảng SX: nhóm Tổ → Ngày → Máy (bấm máy xem chi tiết LSX)
-  const sxTb = $('dailySxBody'); sxTb.innerHTML = '';
-  $('dailySxEmpty').classList.toggle('hide', sx.length > 0);
-  dailyGroups(sx).forEach(g => {
-    const rows = sx.filter(r => r.loai === g);
-    if (!rows.length) return;
-    const st = grpStyle(g);
-    const subKg = rnd(rows.reduce((a, r) => a + (Number(r.tong)||0), 0));
-    const subCuon = rows.reduce((a, r) => a + (Number(r.soCuon)||0), 0);
-    const hdr = document.createElement('tr');
-    hdr.innerHTML = '<td colspan="3" style="background:' + st.bg + ';color:' + st.color + ';font-weight:700">' +
-      st.icon + ' ' + esc(g) + ' — ' + subKg + ' kg · ' + subCuon + ' cuộn</td>';
-    sxTb.appendChild(hdr);
-    daysOf(rows).forEach(d => {
-      const dr = rows.filter(r => r.ngay === d);
-      const dKg = rnd(dr.reduce((a, r) => a + (Number(r.tong)||0), 0));
-      const dCuon = dr.reduce((a, r) => a + (Number(r.soCuon)||0), 0);
-      const dh = document.createElement('tr');
-      dh.innerHTML = '<td colspan="3" style="background:#f7f9fc;font-weight:600;padding-left:14px">📅 ' + esc(dmy(d)) + ' — ' + dKg + ' kg · ' + dCuon + ' cuộn</td>';
-      sxTb.appendChild(dh);
-      dr.forEach(r => {
-        const tr = document.createElement('tr');
-        tr.innerHTML =
-          '<td style="padding-left:26px"><a href="#" class="lsx-hist may-sx" data-loai="' + esc(r.loai) + '" data-ngay="' + esc(r.ngay) + '" data-may="' + esc(r.may) + '">' + esc(r.may) + ' ▸</a></td>' +
-          '<td><b>' + esc(r.tong) + '</b></td>' +
-          '<td>' + esc(r.soCuon) + '</td>';
-        sxTb.appendChild(tr);
+async function tryFlushQueue(){
+  if(!CONFIG.APPS_SCRIPT_URL) return;
+  const q=JSON.parse(localStorage.getItem(LS_QUEUE)||"[]");
+  if(!q.length) return;
+  const remaining=[]; let sentCount=0;
+  for(const payload of q){
+    try{
+      const res=await fetch(CONFIG.APPS_SCRIPT_URL,{
+        method:"POST",headers:{"Content-Type":"text/plain;charset=utf-8"},
+        body:JSON.stringify(payload),redirect:"follow"
       });
-    });
-  });
-
-  // Bảng Phế: nhóm Tổ → Ngày → Máy giống bảng SX
-  const pheTb = $('dailyPheBody'); pheTb.innerHTML = '';
-  $('dailyPheEmpty').classList.toggle('hide', phe.length > 0);
-  dailyGroups(phe).forEach(g => {
-    const rows = phe.filter(r => r.loai === g);
-    if (!rows.length) return;
-    const st = grpStyle(g);
-    const subTron = rnd(rows.reduce((a, r) => a + (Number(r.tron)||0), 0));
-    const subMau = rnd(rows.reduce((a, r) => a + (Number(r.mau)||0), 0));
-    const subTong = rnd(subTron + subMau);
-    const hdr = document.createElement('tr');
-    hdr.innerHTML = '<td colspan="4" style="background:' + st.bg + ';color:' + st.color + ';font-weight:700">' +
-      st.icon + ' ' + esc(g) + ' — ' + subTong + ' kg (trơn ' + subTron + ' · màu ' + subMau + ')</td>';
-    pheTb.appendChild(hdr);
-    daysOf(rows).forEach(d => {
-      const dr = rows.filter(r => r.ngay === d);
-      const dTron = rnd(dr.reduce((a, r) => a + (Number(r.tron)||0), 0));
-      const dMau = rnd(dr.reduce((a, r) => a + (Number(r.mau)||0), 0));
-      const dh = document.createElement('tr');
-      dh.innerHTML = '<td colspan="4" style="background:#f7f9fc;font-weight:600;padding-left:14px">📅 ' + esc(dmy(d)) + ' — ' + rnd(dTron + dMau) + ' kg</td>';
-      pheTb.appendChild(dh);
-      dr.forEach(r => {
-        const tr = document.createElement('tr');
-        const tong = rnd((Number(r.tron)||0) + (Number(r.mau)||0));
-        tr.innerHTML =
-          '<td style="padding-left:26px"><a href="#" class="lsx-hist may-phe" data-loai="' + esc(r.loai) + '" data-ngay="' + esc(r.ngay) + '" data-may="' + esc(r.may) + '">' + esc(r.may) + ' ▸</a></td>' +
-          '<td>' + esc(r.tron) + '</td>' +
-          '<td>' + esc(r.mau) + '</td>' +
-          '<td><b>' + tong + '</b></td>';
-        pheTb.appendChild(tr);
-      });
-    });
-  });
-
-  $('dailyContent').classList.remove('hide');
-}
-
-// ---------- Chi tiết theo Máy (modal) ----------
-$('dailySxBody').addEventListener('click', e => {
-  const a = e.target.closest('.may-sx');
-  if (!a) return;
-  e.preventDefault();
-  openMayDetail('sx', a.dataset.loai, a.dataset.ngay, a.dataset.may);
-});
-$('dailyPheBody').addEventListener('click', e => {
-  const a = e.target.closest('.may-phe');
-  if (!a) return;
-  e.preventDefault();
-  openMayDetail('phe', a.dataset.loai, a.dataset.ngay, a.dataset.may);
-});
-$('mayClose').onclick = () => $('mayModal').classList.remove('show');
-
-function openMayDetail(kind, loai, ngay, may){
-  const rnd = n => Math.round((Number(n)||0) * 100) / 100;
-  $('mayTitle').textContent = (kind === 'sx' ? '🏭 ' : '🗑️ ') + may + ' — ' + dmy(ngay);
-  const tb = $('mayBody'); tb.innerHTML = '';
-  if (kind === 'sx'){
-    $('mayHead').innerHTML = '<tr><th>Giờ</th><th>LSX</th><th>CN</th><th>KL (kg)</th></tr>';
-    const rows = (dailyData.sxd || []).filter(r => r.loai === loai && r.ngay === ngay && r.may === may);
-    let sum = 0;
-    rows.forEach(r => {
-      sum += Number(r.kq) || 0;
-      const tr = document.createElement('tr');
-      tr.innerHTML = '<td>' + esc(r.gio) + '</td><td>' + esc(r.lsx) + '</td><td>' + esc(r.cn) + '</td><td><b>' + rnd(r.kq) + '</b></td>';
-      tb.appendChild(tr);
-    });
-    $('mayInfo').textContent = rows.length
-      ? rows.length + ' lần ghi nhận · Tổng ' + rnd(sum) + ' kg'
-      : 'Chưa có dữ liệu chi tiết — bấm 🔍 Xem báo cáo để tải lại';
-  } else {
-    $('mayHead').innerHTML = '<tr><th>Giờ</th><th>CN</th><th>Trơn</th><th>Màu</th></tr>';
-    const rows = (dailyData.phed || []).filter(r => r.loai === loai && r.ngay === ngay && r.may === may);
-    let sTron = 0, sMau = 0;
-    rows.forEach(r => {
-      sTron += Number(r.tron) || 0; sMau += Number(r.mau) || 0;
-      const tr = document.createElement('tr');
-      tr.innerHTML = '<td>' + esc(r.gio) + '</td><td>' + esc(r.cn) + '</td><td>' + esc(r.tron) + '</td><td>' + esc(r.mau) + '</td>';
-      tb.appendChild(tr);
-    });
-    $('mayInfo').textContent = rows.length
-      ? rows.length + ' lần ghi nhận · Trơn ' + rnd(sTron) + ' kg · Màu ' + rnd(sMau) + ' kg'
-      : 'Chưa có dữ liệu chi tiết — bấm 🔍 Xem báo cáo để tải lại';
+      const out=await res.json().catch(()=>({result:"ok"}));
+      if(out.result==="ok"||out.success){
+        sentCount+=(out.inserted||(payload.rows&&payload.rows.length)||1);
+      } else { remaining.push(payload); }
+    }catch(e){ remaining.push(payload); }
   }
-  $('mayModal').classList.add('show');
+  localStorage.setItem(LS_QUEUE,JSON.stringify(remaining));
+  if(sentCount>0){ FB.sendOk(); showToast("✓ Đã gửi "+sentCount+" bao lưu offline lên Sheet!",4000); }
 }
 
-// Nút lọc Tổ — chỉ vẽ lại từ dữ liệu đã tải, không gọi mạng
-$('dailyFilter').addEventListener('click', e => {
-  const btn = e.target.closest('[data-df]');
-  if (!btn) return;
-  dailyFilter = btn.dataset.df;
-  $('dailyFilter').querySelectorAll('button').forEach(b => b.classList.toggle('active', b === btn));
-  drawDaily();
-});
+async function sendAll(){
+  if(!state.rows.length) return;
+  const btn=document.getElementById("btnSend");
+  btn.disabled=true;
+  btn.innerHTML='<span class="spin"></span> Đang gửi...';
+  banner("warn","Đang gửi "+state.rows.length+" bao...");
 
-// Dashboard filter buttons
-$('dashFilter').addEventListener('click', e => {
-  const btn = e.target.closest('[data-f]');
-  if (!btn) return;
-  dashFilter = btn.dataset.f;
-  $('dashFilter').querySelectorAll('button').forEach(b => b.classList.toggle('active', b === btn));
-  renderDashboard();
-});
-$('dashSearch').addEventListener('input', () => renderDashboard());
-$('dashBack').onclick = () => { $('crumbs').innerHTML = ''; show('step1'); };
-
-// ---------- Cài đặt & tải master (JSONP) ----------
-function openSettings(){ $('urlInput').value = sheetUrl; $('modal').classList.add('show'); }
-$('gear').onclick = openSettings;
-$('btnCancel').onclick = () => $('modal').classList.remove('show');
-$('btnSaveUrl').onclick = () => {
-  sheetUrl = $('urlInput').value.trim();
-  localStorage.setItem(URLKEY, sheetUrl);
-  loadMasters(true);
-};
-$('btnReload').onclick = () => loadMasters(true);
-
-function loadMasters(closeModal){
-  if (!sheetUrl){ toast('Hãy dán link /exec trước'); return; }
-  toast('⏳ Đang tải danh sách CN/Máy...');
-  const cbName = '__tksx_cb_' + Date.now();
-  const s = document.createElement('script');
-  let done = false;
-  window[cbName] = function(data){
-    done = true;
-    // Lưu PIN nếu có
-    if (data.pin) {
-      storedPIN = '' + data.pin;
-      localStorage.setItem(PINKEY, storedPIN);
-    }
-    if (data.pinChuyen) {
-      storedPINChuyen = '' + data.pinChuyen;
-      localStorage.setItem(PINCKEY, storedPINChuyen);
-    }
-    // Lưu masters (bỏ key pin ra)
-    delete data.pin;
-    delete data.pinChuyen;
-    masters = data;
-    localStorage.setItem(MKEY, JSON.stringify(data));
-    cleanup();
-    const tot = (data.cn_in||[]).length + (data.cn_thoi||[]).length + (data.may_in||[]).length + (data.may_thoi||[]).length;
-    toast('✓ Đã tải danh sách ('+tot+' mục)');
-    if (closeModal) $('modal').classList.remove('show');
+  const payload={
+    action:"submit",
+    user: state.user,
+    rows: state.rows.map(r=>({
+      ts:r.ts, user:state.user,
+      may:r.may, mayTen:r.mayTen||"",
+      cn:r.cn,  cnTen:r.cnTen||"",
+      sp:r.sp,  kl:r.kl||"", note:r.note||""
+    }))
   };
-  s.onerror = function(){ cleanup(); toast('⚠ Tải DS lỗi — kiểm tra link /exec & quyền "Anyone".'); };
-  s.src = sheetUrl + '?callback=' + cbName + '&t=' + Date.now();
-  document.body.appendChild(s);
-  setTimeout(function(){ if(!done){ cleanup(); toast('⚠ Quá thời gian tải DS. Kiểm tra link & mạng.'); } }, 12000);
-  function cleanup(){ try{ delete window[cbName]; }catch(e){ window[cbName]=undefined; } if (s.parentNode) s.parentNode.removeChild(s); }
-}
 
-// ---------- Chuyển cuộn ----------
-$('btnChuyen').onclick = () => {
-  const go = () => { enterChuyenCuon(); };
-  if (isAuthChuyen) { go(); return; }
-  pinTarget = 'chuyen';
-  pendingAction = go;
-  $('pinInput').value = '';
-  $('pinModal').classList.add('show');
-  setTimeout(() => $('pinInput').focus(), 200);
-};
-
-function enterChuyenCuon(){
-  chuyenBatch = []; chuyenPaused = false; chuyenLastCode = '';
-  $('chuyenPendingBox').classList.add('hide');
-  $('btnChuyenAddMore').classList.add('hide');
-  renderChuyenBatch();
-  $('crumbs').innerHTML = '📦 <b>Chuyển cuộn sang Cắt</b>';
-  show('step8');
-}
-
-function renderChuyenBatch(){
-  const has = chuyenBatch.length > 0;
-  $('chuyenCount').textContent = 'Đã quét: ' + chuyenBatch.length + ' LSX';
-  $('chuyenEmpty').style.display = has ? 'none' : 'block';
-  const tb = $('chuyenBody'); tb.innerHTML = '';
-  chuyenBatch.forEach((b, i) => {
-    const tr = document.createElement('tr');
-    tr.innerHTML = '<td>'+(i+1)+'</td><td>'+esc(b.lsx)+'</td><td class="del" data-i="'+i+'">✕</td>';
-    tb.appendChild(tr);
-  });
-  tb.querySelectorAll('.del').forEach(el => el.onclick = e => {
-    chuyenBatch.splice(+e.target.dataset.i, 1);
-    chuyenLastCode = '';
-    renderChuyenBatch();
-  });
-}
-
-// Scan cho chuyển cuộn
-$('btnChuyenScan').onclick = () => {
-  initAudio();
-  if (chuyenScanning) stopChuyenScan();
-  else startChuyenScan();
-};
-
-function setChuyenScanBtn(mode){
-  const b = $('btnChuyenScan');
-  if (mode==='live'){ b.textContent='⏹ Dừng camera'; b.style.background='#dc2626'; }
-  else { b.textContent='▶ Bắt đầu Scan QR'; b.style.background=''; }
-}
-
-function startChuyenScan(){
-  if (!qrChuyen) qrChuyen = new Html5Qrcode('chuyenReader');
-  qrChuyen.start({ facingMode:'environment' }, { fps:10, qrbox:{width:220,height:220} },
-    txt => {
-      if (chuyenPaused) return;
-      const t = Date.now();
-      if (t-chuyenLastT<1500) return;
-      chuyenLastCode = txt; chuyenLastT = t;
-      onChuyenScan(txt);
-    }, ()=>{}
-  ).then(()=>{ chuyenScanning=true; chuyenPaused=false; setChuyenScanBtn('live'); $('chuyenStatus').textContent='Đang quét... đưa QR vào khung'; })
-   .catch(e=>$('chuyenStatus').textContent='⚠ Không mở được camera. '+e);
-}
-
-function onChuyenScan(txt){
-  const p = parseQR(txt); // dùng lại parseQR có sẵn: trả {data, lsx, klyc}
-  if (!p){
-    // Thử parse chỉ LSX (không có KL)
-    const lsx = parseLSXFromQR(txt);
-    if (!lsx){
-      if (navigator.vibrate) navigator.vibrate([60,40,60]);
-      toast('⚠ QR sai format: "'+txt+'"');
-      $('chuyenStatus').textContent = '⚠ Bỏ qua QR sai format';
-      return;
+  try{
+    const res=await fetch(CONFIG.APPS_SCRIPT_URL,{
+      method:"POST",
+      headers:{"Content-Type":"text/plain;charset=utf-8"},
+      body:JSON.stringify(payload),
+      redirect:"follow"
+    });
+    const out=await res.json().catch(()=>({result:"ok"}));
+    if(out.result==="ok"||out.success){
+      const n=out.inserted||state.rows.length;
+      FB.sendOk();
+      state.rows=[]; saveRows();
+      state.currentMay=null; state.currentCN=null;
+      btn.disabled=false; btn.textContent="Gửi tất cả lên Google Sheet";
+      showToast("✓ Gửi thành công "+n+" bao!",2500);
+      setTimeout(()=>{
+        if(state.permissions.length > 0) enterModuleScreen();
+        else logout();
+      },1400);
+    } else {
+      FB.sendFail();
+      banner("bad","Lỗi server: "+(out.error||"unknown")+". Dữ liệu đã giữ lại.");
+      btn.disabled=false; btn.textContent="Gửi lại";
     }
-    // QR chỉ có LSX, không có KL — vẫn chấp nhận
-    chuyenBatch.push({ lsx: lsx, klyc: 0 });
-  } else {
-    chuyenBatch.push({ lsx: p.lsx, klyc: p.klyc });
+  }catch(e){
+    FB.sendFail();
+    saveToQueue(payload);
+    state.rows=[]; saveRows();
+    state.currentMay=null; state.currentCN=null;
+    stopCamera();
+    btn.disabled=false; btn.textContent="Gửi tất cả lên Google Sheet";
+    setTimeout(()=>{
+      if(state.permissions.length > 0) enterModuleScreen();
+      else logout();
+    },400);
+    showToast("Mất mạng — đã lưu offline. Sẽ tự gửi khi có mạng.",5000);
   }
-  renderChuyenBatch();
-  try { qrChuyen.pause(true); } catch(e){}
-  chuyenPaused = true;
-  beep(); flashOK(); if (navigator.vibrate) navigator.vibrate(110);
-  const added = chuyenBatch[chuyenBatch.length-1];
-  $('chuyenPendingBox').textContent = '✓ Đã thêm: ' + added.lsx + (added.klyc ? ' (KLYC: '+added.klyc+' kg)' : '');
-  $('chuyenPendingBox').classList.remove('hide');
-  $('btnChuyenAddMore').classList.remove('hide');
-  $('chuyenStatus').textContent = 'Đã thêm. Bấm "Scan LSX khác" nếu cuộn ghép.';
 }
 
-// Parse LSX từ QR (format: LSX/KL hoặc chỉ LSX)
-function parseLSXFromQR(txt){
-  txt = (''+(txt==null?'':txt)).trim();
-  if (!txt) return null;
-  const parts = txt.split('/');
-  const lsx = parts[0].trim();
-  return lsx || null;
-}
-
-$('btnChuyenAddMore').onclick = () => {
-  $('chuyenPendingBox').classList.add('hide');
-  $('btnChuyenAddMore').classList.add('hide');
-  chuyenLastCode = '';
-  if (qrChuyen && chuyenScanning){ try { qrChuyen.resume(); } catch(e){} chuyenPaused=false; }
-  $('chuyenStatus').textContent = 'Đang quét... đưa QR tiếp theo vào khung';
-};
-
-function stopChuyenScan(){
-  if (qrChuyen && chuyenScanning) return qrChuyen.stop().then(()=>{
-    chuyenScanning=false; chuyenPaused=false;
-    $('chuyenPendingBox').classList.add('hide'); $('btnChuyenAddMore').classList.add('hide');
-    setChuyenScanBtn('idle'); $('chuyenStatus').textContent='Đã dừng camera';
-  });
-  return Promise.resolve();
-}
-
-// Nhập tay cho chuyển cuộn (hỗ trợ LSX hoặc LSX/KL)
-$('btnChuyenManual').onclick = () => {
-  const v = $('chuyenManualFld').value.trim();
-  if (!v){ $('chuyenManualFld').focus(); return; }
-  const p = parseQR(v);
-  const lsx = p ? p.lsx : v.split('/')[0].trim();
-  const klyc = p ? p.klyc : 0;
-  if (!lsx){ toast('⚠ Nhập mã LSX hợp lệ'); return; }
-  chuyenBatch.push({ lsx: lsx, klyc: klyc });
-  renderChuyenBatch();
-  $('chuyenManualFld').value = '';
-  $('chuyenManualFld').focus();
-  toast('✓ Đã thêm ' + lsx);
-};
-$('chuyenManualFld').addEventListener('keydown', e => { if(e.key==='Enter'){ e.preventDefault(); $('btnChuyenManual').click(); } });
-
-// Xác nhận chuyển cuộn — gửi danh sách LSX, server tự tính KL từ data SX
-$('btnChuyenSend').onclick = async () => {
-  if (!chuyenBatch.length){ toast('Chưa quét QR nào'); return; }
-  const time = nowStr();
-  const rows = chuyenBatch.map(b => ({ time: time, lsx: b.lsx }));
-  queue.push({ ts: Date.now(), batchId: genId(), type: 'chuyencuon', rows: rows });
-  saveQ();
-  try { await stopChuyenScan(); } catch(e){}
-  const n = chuyenBatch.length;
-  chuyenBatch = []; chuyenLastCode = '';
-  renderChuyenBatch();
-  $('crumbs').innerHTML = '';
-  show('step1');
-  renderQueueBadge();
-  if (navigator.onLine){ toast('📤 Đã lưu — đang gửi chuyển cuộn (' + n + ' LSX)'); flushQueue(); }
-  else { toast('📦 Đã lưu tạm, sẽ tự gửi khi có mạng'); }
-};
-
-$('btnChuyenBack').onclick = async () => { await stopChuyenScan(); chuyenBatch=[]; renderChuyenBatch(); $('crumbs').innerHTML=''; show('step1'); };
-
-// ---------- Thống kê chuyển cuộn ----------
-let ccData = [];  // rows đã tải: [{time, ngay, lsx, kl, ghichu}]
-
-$('btnChuyenStat').onclick = () => {
-  show('step10');
-  const t = todayISO();
-  if (!$('ccFrom').value) $('ccFrom').value = t;
-  if (!$('ccTo').value) $('ccTo').value = t;
-  loadChuyenStat();
-};
-$('btnCcLoad').onclick = () => loadChuyenStat();
-$('btnCcToday').onclick = () => { const t = todayISO(); $('ccFrom').value = t; $('ccTo').value = t; loadChuyenStat(); };
-$('btnCcYesterday').onclick = () => { const y = yesterdayISO(); $('ccFrom').value = y; $('ccTo').value = y; loadChuyenStat(); };
-$('ccBack').onclick = () => show('step1');
-$('ccSearch').addEventListener('input', () => renderCcStat());
-
-function loadChuyenStat(){
-  if (!sheetUrl){ toast('Chưa có link Sheet'); return; }
-  let from = $('ccFrom').value || todayISO();
-  let to = $('ccTo').value || todayISO();
-  if (from > to){ const tmp = from; from = to; to = tmp; $('ccFrom').value = from; $('ccTo').value = to; }
-  $('ccStatus').textContent = '⏳ Đang tải...';
-  jsonp(sheetUrl + '?action=chuyenstat&from=' + from + '&to=' + to, 30000, function(data){
-    ccData = data.rows || [];
-    $('ccStatus').textContent = '✓ Đã cập nhật lúc ' + timeStr();
-    renderCcStat();
-  }, function(){
-    $('ccStatus').textContent = '⚠ Không tải được dữ liệu — kiểm tra mạng rồi thử lại';
-  });
-}
-
-function renderCcStat(){
-  const q = ($('ccSearch').value || '').toLowerCase().trim();
-  let rows = ccData;
-  if (q) rows = rows.filter(r => ('' + r.lsx).toLowerCase().indexOf(q) !== -1);
-  const rnd = n => Math.round((Number(n)||0) * 100) / 100;
-  const tongKg = rnd(rows.reduce((a, r) => a + (Number(r.kl)||0), 0));
-  const soLSXSet = {};
-  rows.forEach(r => { soLSXSet[r.lsx] = 1; });
-  $('ccSummary').innerHTML =
-    '<div class="sbox"><div class="snum">' + rows.length + '</div><div class="slbl">Số cuộn</div></div>' +
-    '<div class="sbox"><div class="snum">' + tongKg + '</div><div class="slbl">Tổng kg</div></div>' +
-    '<div class="sbox"><div class="snum">' + Object.keys(soLSXSet).length + '</div><div class="slbl">Số LSX</div></div>';
-  const tb = $('ccStatBody'); tb.innerHTML = '';
-  $('ccEmpty').classList.toggle('hide', rows.length > 0);
-  // Mới nhất lên đầu
-  rows.slice().reverse().forEach(r => {
-    const tr = document.createElement('tr');
-    const note = r.ghichu ? '<div style="font-size:11px;color:#dc2626">' + esc(r.ghichu) + '</div>' : '';
-    tr.innerHTML =
-      '<td>' + esc(r.time) + '</td>' +
-      '<td>' + esc(r.lsx) + '</td>' +
-      '<td><b>' + esc(r.kl) + '</b>' + note + '</td>';
-    tb.appendChild(tr);
-  });
-}
-
-// ---------- Nút Home 🏠: dừng camera, xóa trạng thái dở dang, về trang chính ----------
-async function goHome(){
-  try { await stopScan(); } catch(e){}
-  try { await stopChuyenScan(); } catch(e){}
-  batch = []; curAlloc = []; curKlcuon = 0; curMethod = ''; lastCode = ''; pendingQR = null; paused = false;
-  renderBatch();
-  chuyenBatch = []; chuyenLastCode = '';
-  renderChuyenBatch();
-  showPhase('scan');
-  sel = { mode:'', cn:'', may:'' };
-  appMode = 'sx';
-  updateCrumbs();
-  show('step1');
-}
-['cnHome','myHome','step4Home','dashHome','pheHome1','pheHome3','chuyenHome','dailyHome','ccHome'].forEach(id => {
-  const el = $(id);
-  if (el) el.onclick = goHome;
+window.addEventListener("online",()=>{
+  showToast("Có mạng — đang gửi dữ liệu offline...",3000);
+  setTimeout(tryFlushQueue,1000);
 });
 
-// ---------- Tự gửi lại khi có mạng ----------
-window.addEventListener('online', () => { toast('🌐 Đã có mạng — đang gửi dữ liệu chờ'); flushQueue(); });
-window.addEventListener('offline', renderQueueBadge);
-setInterval(() => { if (queue.length && navigator.onLine && !flushing) flushQueue(); }, 20000);
+/* ══════════════════════════════════════════════════
+   NHẬP TAY MÁY / CN (chưa có trong master)
+══════════════════════════════════════════════════ */
+let pendingWeightRow = null; // row chờ nhập kg
 
-// ---------- Khởi động ----------
-if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(()=>{});
-show('step1');
-updateCrumbs();
-renderQueueBadge();
-flushQueue();
-if (sheetUrl && !masters) loadMasters(false);
+/* ══════════════════════════════════════════════════
+   POPUP NHẬP KHỐI LƯỢNG
+══════════════════════════════════════════════════ */
+function openWeightPopup(row){
+  pendingWeightRow = row;
+  const may = state.currentMay, cn = state.currentCN;
+  const parts = row.sp.split("/");
+  const lsx=parts[0]||"", sl=parts[1]||"", dvt=parts[2]||"", klQR=parts[3]||"";
+  document.getElementById("weightCtx").innerHTML =
+    "🏭 "+(may.ten||may.ma)+" · 👷 "+(cn.ten||cn.ma)+
+    "<br>📦 LSX: <b>"+esc(lsx)+"</b> · SL: <b>"+esc(sl)+" "+esc(dvt)+"</b> · KL(QR): <b>"+esc(klQR)+"</b>";
+  document.getElementById("wKg").value="";
+  const errEl=document.getElementById("weightErr");
+  errEl.style.display="none"; errEl.textContent="";
+  document.getElementById("weightOverlay").classList.add("active");
+  setTimeout(()=>document.getElementById("wKg").focus(), 200);
+}
+
+function cancelWeight(){
+  document.getElementById("weightOverlay").classList.remove("active");
+  pendingWeightRow = null;
+  resumeScanning();
+  setHint("info","Đã hủy — đưa mã QR vào khung để quét lại");
+}
+
+function confirmWeight(){
+  const val = document.getElementById("wKg").value.trim();
+  const errEl = document.getElementById("weightErr");
+  if(!val || isNaN(numVN(val)) || numVN(val) <= 0){
+    errEl.textContent="Vui lòng nhập khối lượng hợp lệ (> 0)";
+    errEl.style.display="block";
+    return;
+  }
+  pendingWeightRow.kl = numVN(val);
+  state.rows.push(pendingWeightRow);
+  saveRows();
+  refreshCount();
+  FB.row();
+  document.getElementById("weightOverlay").classList.remove("active");
+  pendingWeightRow = null;
+  document.getElementById("wKg").blur();
+  const msg = "✓ Đã ghi 1 bao "+val+" kg (tổng "+state.rows.length+")";
+  resumeScanning(msg);
+}
+
+/* Tự động mở khóa quét sau khi nhập KL xong (không cần bấm "Quét tiếp") */
+function resumeScanning(okMsg){
+  lastText="";
+  if(scanning){
+    scanLocked=false;
+    document.getElementById("btnScanNext").textContent="Quét tiếp";
+    setHint("ok", okMsg || "Đưa mã QR sản phẩm vào khung để quét tiếp");
+  } else {
+    // Camera chưa/không còn chạy → vẫn cần bấm nút để bật lại
+    setHint("info", okMsg ? okMsg+" — Bấm \"Bắt đầu quét\" để tiếp tục" : "Bấm \"Bắt đầu quét\" để tiếp tục");
+  }
+}
+
+let manualPickerMode = ""; // "may" | "cn"
+
+function openManualPicker(mode){
+  manualPickerMode = mode;
+  const isMay = mode === "may";
+  document.getElementById("manualPickerTitle").textContent =
+    isMay ? "✏️ Nhập tay Máy" : "✏️ Nhập tay Công nhân";
+  document.getElementById("manualPickerCodeLabel").textContent =
+    isMay ? "Mã Máy" : "Mã Công nhân";
+  document.getElementById("mpCode").placeholder =
+    isMay ? "VD: 01, Máy cắt A..." : "VD: NV05, Tuyền...";
+  document.getElementById("mpCode").value = "";
+  document.getElementById("mpName").value = "";
+  const errEl = document.getElementById("mpErr");
+  errEl.style.display = "none"; errEl.textContent = "";
+  document.getElementById("manualPickerOverlay").classList.add("active");
+  setTimeout(()=>document.getElementById("mpCode").focus(), 200);
+}
+
+function closeManualPicker(){
+  document.getElementById("manualPickerOverlay").classList.remove("active");
+}
+
+function submitManualPicker(){
+  const ma   = document.getElementById("mpCode").value.trim().toUpperCase();
+  const ten  = document.getElementById("mpName").value.trim();
+  const errEl = document.getElementById("mpErr");
+
+  if(!ma){ errEl.textContent="Vui lòng nhập Mã"; errEl.style.display="block"; return; }
+
+  const item = { ma, ten, ghiChu: "nhập tay" };
+  closeManualPicker();
+
+  if(manualPickerMode === "may"){
+    selectMachine(item);
+  } else {
+    selectWorker(item);
+  }
+}
+
+/* ══════════════════════════════════════════════════
+   SERVICE WORKER (PWA)
+══════════════════════════════════════════════════ */
+if("serviceWorker" in navigator){
+  window.addEventListener("load",()=>{
+    navigator.serviceWorker.register("sw.js").catch(()=>{});
+  });
+}
+
+/* ══════════════════════════════════════════════════
+   KHỞI ĐỘNG — luôn về màn hình chọn người phụ trách
+══════════════════════════════════════════════════ */
+/* Enter (hoặc phím "→"/"Xong" trên bàn phím số) = xác nhận, khỏi cần chạm nút */
+function onEnterKey(fn){
+  return function(ev){
+    if(ev.key==="Enter"||ev.keyCode===13){
+      ev.preventDefault();
+      fn();
+    }
+  };
+}
+document.getElementById("wKg").addEventListener("keydown", onEnterKey(confirmWeight));
+document.getElementById("mKg").addEventListener("keydown", onEnterKey(submitManual));
+document.getElementById("loginUser").addEventListener("keydown", onEnterKey(()=>document.getElementById("loginPass").focus()));
+document.getElementById("loginPass").addEventListener("keydown", onEnterKey(doLogin));
+
+function boot(){
+  state.rows=JSON.parse(localStorage.getItem(LS_ROWS)||"[]");
+  // Preload lists in background
+  loadMachines();
+  loadWorkers();
+
+  // Khôi phục session nếu có (quay lại từ tien-do.html hoặc trang khác)
+  var saved = sessionStorage.getItem("ghinhan_session");
+  if(saved){
+    try{
+      var s = JSON.parse(saved);
+      // Session hợp lệ nếu có username và chưa quá 8 giờ
+      if(s.username && s.ts && (Date.now() - s.ts < 8*3600*1000)){
+        state.user = s.user;
+        state.maNV = s.maNV;
+        state.username = s.username;
+        state.permissions = s.permissions || [];
+        if(state.permissions.length > 0){
+          enterModuleScreen();
+        } else {
+          enterMayScreen();
+        }
+        if(navigator.onLine) setTimeout(tryFlushQueue,3000);
+        return; // không hiện login
+      }
+    }catch(e){}
+  }
+
+  // Không có session → hiện login
+  show("screenLogin");
+  prefillLastUsername();
+  if(navigator.onLine) setTimeout(tryFlushQueue,3000);
+}
+boot();
 </script>
 </body>
 </html>
