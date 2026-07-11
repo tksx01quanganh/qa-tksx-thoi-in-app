@@ -7,6 +7,8 @@
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="icon-192.png">
 <title>TKSX</title>
+<!-- v2: 2 nhóm chức năng, Thống kê Sản lượng Tổ-Ngày-Máy, Thống kê chuyển cuộn -->
+
 <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
 <style>
   * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
@@ -77,7 +79,11 @@
   .dash-table .neg { color: #dc2626; font-weight: 700; }
   .dash-table .pos { color: #166534; }
   .dash-scroll { max-height: 65vh; overflow-y: auto; }
-  .dash-table .kh { max-width: 62px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; word-break: normal; }
+  .dash-table th.col-lsx { width: 78px; }
+  .dash-table .kh { word-break: break-word; }
+  .daterow { display: flex; align-items: center; gap: 6px; margin-bottom: 8px; }
+  .daterow .dlbl { font-size: 13px; color: #5a6473; flex: none; }
+  .daterow input.fld { margin-bottom: 0; padding: 9px 5px; font-size: 14px; min-width: 0; flex: 1; }
   .lsx-hist { color: #0f766e; font-weight: 600; text-decoration: underline; }
   .tag { display: inline-block; font-size: 11px; padding: 2px 7px; border-radius: 6px; font-weight: 600; }
   .tag-nb { background: #dbeafe; color: #1e40af; }
@@ -91,23 +97,29 @@
 </head>
 <body>
 <header>
-  <h1>🏭 Ghi nhận sản xuất</h1>
+  <h1></h1>
   <button class="gear" id="gear" title="Cài đặt">⚙️</button>
 </header>
 <div class="crumbs" id="crumbs"></div>
 <div class="qbar hide" id="queueBar"></div>
 
-<!-- BƯỚC 1: Thổi / In -->
-<div class="card step hide" id="step1">
-  <p class="steptitle">Bước 1 — Chọn công đoạn</p>
-  <div class="row">
-    <button class="b-thoi big full" data-mode="Thổi">💨<br>Thổi</button>
-    <button class="b-in big full" data-mode="In">🖨️<br>In</button>
+<!-- MÀN HÌNH CHÍNH: 2 nhóm chức năng -->
+<div class="step hide" id="step1">
+  <div class="card">
+    <p class="steptitle">📝 Ghi nhận kết quả SX</p>
+    <div class="row">
+      <button class="b-thoi big full" data-mode="Thổi">💨<br>Thổi</button>
+      <button class="b-in big full" data-mode="In">🖨️<br>In</button>
+    </div>
+    <button class="b-dash full" id="btnDashboard" style="margin-top:12px">📊 Kiểm tra kết quả</button>
+    <button class="b-phe full" id="btnPhe" style="margin-top:8px">🗑️ Nhập Phế</button>
+    <button class="b-dash full" id="btnDaily" style="margin-top:8px;background:#0d9488">📈 Thống kê Sản lượng</button>
   </div>
-  <button class="b-dash full" id="btnDashboard" style="margin-top:12px">📊 Kiểm tra kết quả</button>
-  <button class="b-dash full" id="btnDaily" style="margin-top:8px;background:#0d9488">📅 Sản lượng theo ngày</button>
-  <button class="b-phe full" id="btnPhe" style="margin-top:8px">🗑️ Nhập Phế</button>
-  <button class="b-go full" id="btnChuyen" style="margin-top:8px">📦 Chuyển cuộn sang Cắt</button>
+  <div class="card">
+    <p class="steptitle">📦 Chuyển Cuộn</p>
+    <button class="b-go full" id="btnChuyen">📦 Chuyển cuộn sang Cắt</button>
+    <button class="b-dash full" id="btnChuyenStat" style="margin-top:8px;background:#7c3aed">📈 Thống kê chuyển cuộn</button>
+  </div>
 </div>
 
 <!-- BƯỚC 2: Công nhân -->
@@ -205,7 +217,7 @@
   <div id="dashNote" style="font-size:12px;color:#98a2b3;margin:0 0 6px"></div>
   <div class="dash-scroll">
     <table class="dash-table">
-      <thead><tr><th>LSX</th><th class="kh">KH</th><th>KLYC</th><th>Đã SX</th><th>#</th><th>SL</th></tr></thead>
+      <thead><tr><th class="col-lsx">LSX</th><th class="kh">Khách</th><th>KLYC</th><th>Đã SX</th><th>#</th></tr></thead>
       <tbody id="dashBody"></tbody>
     </table>
   </div>
@@ -218,12 +230,16 @@
     <button class="nav-back" id="dailyBack" title="Quay lại">←</button>
     <button class="nav-home" id="dailyHome" title="Về trang chính">🏠</button>
   </div>
-  <p class="steptitle">📅 Sản lượng theo ngày</p>
-  <div class="row">
-    <div style="flex:1"><label style="margin-top:0">Từ ngày</label><input class="fld" type="date" id="dFrom"></div>
-    <div style="flex:1"><label style="margin-top:0">Đến ngày</label><input class="fld" type="date" id="dTo"></div>
+  <p class="steptitle">📈 Thống kê Sản lượng</p>
+  <div class="daterow">
+    <span class="dlbl">Từ</span><input class="fld" type="date" id="dFrom">
+    <span class="dlbl">Đến</span><input class="fld" type="date" id="dTo">
   </div>
-  <button class="b-go full" id="btnDailyLoad">🔍 Xem báo cáo</button>
+  <div class="row" style="margin-bottom:4px">
+    <button class="b-go" id="btnDailyLoad" style="flex:2;padding:13px 4px">🔍 Xem báo cáo</button>
+    <button class="b-dash" id="btnToday" style="flex:1;padding:13px 4px">Hôm nay</button>
+    <button class="b-dash" id="btnYesterday" style="flex:1;padding:13px 4px;background:#8b5cf6">Hôm qua</button>
+  </div>
   <div class="status" id="dailyStatus" style="text-align:left;margin:0 0 6px"></div>
   <div class="dash-filter" id="dailyFilter">
     <button class="active" data-df="all">Tất cả</button>
@@ -245,6 +261,34 @@
     </table>
     <div class="empty hide" id="dailyPheEmpty">Không có ghi nhận phế trong khoảng ngày này</div>
   </div>
+</div>
+
+<!-- BƯỚC 10: Thống kê chuyển cuộn -->
+<div class="card step hide" id="step10">
+  <div class="navrow">
+    <button class="nav-back" id="ccBack" title="Quay lại">←</button>
+    <button class="nav-home" id="ccHome" title="Về trang chính">🏠</button>
+  </div>
+  <p class="steptitle">📈 Thống kê chuyển cuộn</p>
+  <div class="daterow">
+    <span class="dlbl">Từ</span><input class="fld" type="date" id="ccFrom">
+    <span class="dlbl">Đến</span><input class="fld" type="date" id="ccTo">
+  </div>
+  <div class="row" style="margin-bottom:8px">
+    <button class="b-go" id="btnCcLoad" style="flex:2;padding:13px 4px">🔍 Xem báo cáo</button>
+    <button class="b-dash" id="btnCcToday" style="flex:1;padding:13px 4px">Hôm nay</button>
+    <button class="b-dash" id="btnCcYesterday" style="flex:1;padding:13px 4px;background:#8b5cf6">Hôm qua</button>
+  </div>
+  <input class="search" id="ccSearch" placeholder="🔎 Tìm theo LSX..." autocomplete="off">
+  <div class="status" id="ccStatus" style="text-align:left;margin:0 0 6px"></div>
+  <div class="dash-summary" id="ccSummary"></div>
+  <div class="dash-scroll">
+    <table class="dash-table">
+      <thead><tr><th>Thời gian</th><th>LSX</th><th>KL (kg)</th></tr></thead>
+      <tbody id="ccStatBody"></tbody>
+    </table>
+  </div>
+  <div class="empty hide" id="ccEmpty">Không có dữ liệu chuyển cuộn trong khoảng ngày này</div>
 </div>
 
 <!-- BƯỚC 6: Nhập Phế — chọn công đoạn -->
@@ -326,6 +370,21 @@
   </div>
 </div>
 
+<!-- Modal chi tiết theo Máy (Thống kê Sản lượng / Phế) -->
+<div class="modal" id="mayModal">
+  <div class="box">
+    <h3 id="mayTitle">🏭 Chi tiết máy</h3>
+    <div class="status" id="mayInfo" style="text-align:left;margin:0 0 8px"></div>
+    <div style="max-height:55vh;overflow-y:auto">
+      <table class="dash-table">
+        <thead id="mayHead"></thead>
+        <tbody id="mayBody"></tbody>
+      </table>
+    </div>
+    <button class="b-back full" id="mayClose" style="margin-top:10px">Đóng</button>
+  </div>
+</div>
+
 <!-- Modal PIN -->
 <div class="modal" id="pinModal">
   <div class="box">
@@ -355,7 +414,7 @@
 
 <script>
 const URLKEY = 'tksx_url', MKEY = 'tksx_masters', QKEY = 'tksx_queue', PINKEY = 'tksx_pin', PINCKEY = 'tksx_pin_chuyen';
-const DASHFULL = 'tksx_dash_full', DAILYCACHE = 'tksx_daily_cache';
+const DASHFULL = 'tksx_dash_full', DAILYCACHE = 'tksx_daily_cache2';
 // Link Google Sheet gắn sẵn -> mọi điện thoại tự kết nối, chỉ cần mở 1 link Netlify
 const DEFAULT_URL = 'https://script.google.com/macros/s/AKfycbztgdaMXNFinyvZWXeO18tGHFFUKXW6V0XvvbWNR71L311WnsbVVWDreYSuLsdpZnrsiA/exec';
 let sheetUrl = localStorage.getItem(URLKEY) || DEFAULT_URL;
@@ -986,8 +1045,7 @@ function renderDashboard(){
       '<td class="kh">' + esc(r.kh || '') + '</td>' +
       '<td>' + rnd2(r.klyc) + '</td>' +
       '<td>' + rnd2(r.tongSX) + '</td>' +
-      '<td class="' + (conLai < 0 ? 'neg' : conLai > 0 ? 'pos' : '') + '">' + conLai + '</td>' +
-      '<td>' + esc(r.soLanSX) + '</td>';
+      '<td class="' + (conLai < 0 ? 'neg' : conLai > 0 ? 'pos' : '') + '">' + conLai + '</td>';
     tb.appendChild(tr);
   });
 }
@@ -1037,15 +1095,22 @@ function todayISO(){
   const d = new Date(), p = n => String(n).padStart(2,'0');
   return d.getFullYear() + '-' + p(d.getMonth()+1) + '-' + p(d.getDate());
 }
+function yesterdayISO(){
+  const d = new Date(); d.setDate(d.getDate() - 1);
+  const p = n => String(n).padStart(2,'0');
+  return d.getFullYear() + '-' + p(d.getMonth()+1) + '-' + p(d.getDate());
+}
 $('btnDaily').onclick = () => {
   show('step9');
-  $('crumbs').innerHTML = '📅 <b>Sản lượng theo ngày</b>';
+  $('crumbs').innerHTML = '📈 <b>Thống kê Sản lượng</b>';
   const t = todayISO();
   if (!$('dFrom').value) $('dFrom').value = t;
   if (!$('dTo').value) $('dTo').value = t;
   loadDaily();
 };
 $('btnDailyLoad').onclick = () => loadDaily();
+$('btnToday').onclick = () => { const t = todayISO(); $('dFrom').value = t; $('dTo').value = t; loadDaily(); };
+$('btnYesterday').onclick = () => { const y = yesterdayISO(); $('dFrom').value = y; $('dTo').value = y; loadDaily(); };
 $('dailyBack').onclick = () => { $('crumbs').innerHTML = ''; show('step1'); };
 
 function loadDaily(){
@@ -1060,7 +1125,7 @@ function loadDaily(){
   try { cached = JSON.parse(localStorage.getItem(DAILYCACHE) || 'null'); } catch(e){}
   const hasCache = cached && cached.key === rangeKey && cached.data;
   if (hasCache){
-    renderDaily(cached.data.sx || [], cached.data.phe || []);
+    renderDaily(cached.data);
     $('dailyStatus').textContent = '📥 Bản lưu lúc ' + (cached.time || '') + ' — đang cập nhật...';
   } else {
     $('dailySummary').innerHTML = '<div class="sbox"><div class="slbl">Đang tải...</div></div>';
@@ -1075,7 +1140,7 @@ function loadDaily(){
   window[cbName] = function(data){
     done = true;
     cleanup();
-    renderDaily(data.sx || [], data.phe || []);
+    renderDaily(data);
     try { localStorage.setItem(DAILYCACHE, JSON.stringify({ key: rangeKey, time: timeStr(), data: data })); } catch(e){}
     $('dailyStatus').textContent = '✓ Đã cập nhật lúc ' + timeStr();
   };
@@ -1096,12 +1161,19 @@ function loadDaily(){
   function cleanup(){ try{ delete window[cbName]; }catch(e){ window[cbName]=undefined; } if(s.parentNode) s.parentNode.removeChild(s); }
 }
 
-let dailyData = { sx: [], phe: [] };  // dữ liệu đã tải — lọc Tổ không cần tải lại
+let dailyData = { sx: [], phe: [], sxd: [], phed: [] };  // dữ liệu đã tải — lọc Tổ không cần tải lại
 let dailyFilter = 'all';
 
-function renderDaily(sx, phe){
-  dailyData = { sx: sx || [], phe: phe || [] };
+function renderDaily(data){
+  data = data || {};
+  dailyData = { sx: data.sx || [], phe: data.phe || [], sxd: data.sxd || [], phed: data.phed || [] };
   drawDaily();
+}
+
+// yyyy-mm-dd -> dd/mm/yyyy
+function dmy(k){
+  const p = ('' + (k || '')).split('-');
+  return p.length === 3 ? p[2] + '/' + p[1] + '/' + p[0] : ('' + (k || ''));
 }
 
 // Thứ tự nhóm: Thổi trước, In sau, loại khác (nếu có) xuống cuối
@@ -1135,7 +1207,10 @@ function drawDaily(){
   const sx = dailyFilter === 'all' ? sxAll : sxAll.filter(r => r.loai === dailyFilter);
   const phe = dailyFilter === 'all' ? pheAll : pheAll.filter(r => r.loai === dailyFilter);
 
-  // Bảng SX: nhóm theo Tổ — dòng tiêu đề nhóm (kèm tổng nhóm), máy bên dưới
+  // Danh sách ngày trong nhóm (tăng dần)
+  const daysOf = rows => { const d = []; rows.forEach(r => { if (d.indexOf(r.ngay) === -1) d.push(r.ngay); }); d.sort(); return d; };
+
+  // Bảng SX: nhóm Tổ → Ngày → Máy (bấm máy xem chi tiết LSX)
   const sxTb = $('dailySxBody'); sxTb.innerHTML = '';
   $('dailySxEmpty').classList.toggle('hide', sx.length > 0);
   dailyGroups(sx).forEach(g => {
@@ -1148,17 +1223,25 @@ function drawDaily(){
     hdr.innerHTML = '<td colspan="3" style="background:' + st.bg + ';color:' + st.color + ';font-weight:700">' +
       st.icon + ' ' + esc(g) + ' — ' + subKg + ' kg · ' + subCuon + ' cuộn</td>';
     sxTb.appendChild(hdr);
-    rows.forEach(r => {
-      const tr = document.createElement('tr');
-      tr.innerHTML =
-        '<td style="padding-left:20px">' + esc(r.may) + '</td>' +
-        '<td><b>' + esc(r.tong) + '</b></td>' +
-        '<td>' + esc(r.soCuon) + '</td>';
-      sxTb.appendChild(tr);
+    daysOf(rows).forEach(d => {
+      const dr = rows.filter(r => r.ngay === d);
+      const dKg = rnd(dr.reduce((a, r) => a + (Number(r.tong)||0), 0));
+      const dCuon = dr.reduce((a, r) => a + (Number(r.soCuon)||0), 0);
+      const dh = document.createElement('tr');
+      dh.innerHTML = '<td colspan="3" style="background:#f7f9fc;font-weight:600;padding-left:14px">📅 ' + esc(dmy(d)) + ' — ' + dKg + ' kg · ' + dCuon + ' cuộn</td>';
+      sxTb.appendChild(dh);
+      dr.forEach(r => {
+        const tr = document.createElement('tr');
+        tr.innerHTML =
+          '<td style="padding-left:26px"><a href="#" class="lsx-hist may-sx" data-loai="' + esc(r.loai) + '" data-ngay="' + esc(r.ngay) + '" data-may="' + esc(r.may) + '">' + esc(r.may) + ' ▸</a></td>' +
+          '<td><b>' + esc(r.tong) + '</b></td>' +
+          '<td>' + esc(r.soCuon) + '</td>';
+        sxTb.appendChild(tr);
+      });
     });
   });
 
-  // Bảng Phế: nhóm theo Tổ giống bảng SX
+  // Bảng Phế: nhóm Tổ → Ngày → Máy giống bảng SX
   const pheTb = $('dailyPheBody'); pheTb.innerHTML = '';
   $('dailyPheEmpty').classList.toggle('hide', phe.length > 0);
   dailyGroups(phe).forEach(g => {
@@ -1172,19 +1255,76 @@ function drawDaily(){
     hdr.innerHTML = '<td colspan="4" style="background:' + st.bg + ';color:' + st.color + ';font-weight:700">' +
       st.icon + ' ' + esc(g) + ' — ' + subTong + ' kg (trơn ' + subTron + ' · màu ' + subMau + ')</td>';
     pheTb.appendChild(hdr);
-    rows.forEach(r => {
-      const tr = document.createElement('tr');
-      const tong = rnd((Number(r.tron)||0) + (Number(r.mau)||0));
-      tr.innerHTML =
-        '<td style="padding-left:20px">' + esc(r.may) + '</td>' +
-        '<td>' + esc(r.tron) + '</td>' +
-        '<td>' + esc(r.mau) + '</td>' +
-        '<td><b>' + tong + '</b></td>';
-      pheTb.appendChild(tr);
+    daysOf(rows).forEach(d => {
+      const dr = rows.filter(r => r.ngay === d);
+      const dTron = rnd(dr.reduce((a, r) => a + (Number(r.tron)||0), 0));
+      const dMau = rnd(dr.reduce((a, r) => a + (Number(r.mau)||0), 0));
+      const dh = document.createElement('tr');
+      dh.innerHTML = '<td colspan="4" style="background:#f7f9fc;font-weight:600;padding-left:14px">📅 ' + esc(dmy(d)) + ' — ' + rnd(dTron + dMau) + ' kg</td>';
+      pheTb.appendChild(dh);
+      dr.forEach(r => {
+        const tr = document.createElement('tr');
+        const tong = rnd((Number(r.tron)||0) + (Number(r.mau)||0));
+        tr.innerHTML =
+          '<td style="padding-left:26px"><a href="#" class="lsx-hist may-phe" data-loai="' + esc(r.loai) + '" data-ngay="' + esc(r.ngay) + '" data-may="' + esc(r.may) + '">' + esc(r.may) + ' ▸</a></td>' +
+          '<td>' + esc(r.tron) + '</td>' +
+          '<td>' + esc(r.mau) + '</td>' +
+          '<td><b>' + tong + '</b></td>';
+        pheTb.appendChild(tr);
+      });
     });
   });
 
   $('dailyContent').classList.remove('hide');
+}
+
+// ---------- Chi tiết theo Máy (modal) ----------
+$('dailySxBody').addEventListener('click', e => {
+  const a = e.target.closest('.may-sx');
+  if (!a) return;
+  e.preventDefault();
+  openMayDetail('sx', a.dataset.loai, a.dataset.ngay, a.dataset.may);
+});
+$('dailyPheBody').addEventListener('click', e => {
+  const a = e.target.closest('.may-phe');
+  if (!a) return;
+  e.preventDefault();
+  openMayDetail('phe', a.dataset.loai, a.dataset.ngay, a.dataset.may);
+});
+$('mayClose').onclick = () => $('mayModal').classList.remove('show');
+
+function openMayDetail(kind, loai, ngay, may){
+  const rnd = n => Math.round((Number(n)||0) * 100) / 100;
+  $('mayTitle').textContent = (kind === 'sx' ? '🏭 ' : '🗑️ ') + may + ' — ' + dmy(ngay);
+  const tb = $('mayBody'); tb.innerHTML = '';
+  if (kind === 'sx'){
+    $('mayHead').innerHTML = '<tr><th>Giờ</th><th>LSX</th><th>CN</th><th>KL (kg)</th></tr>';
+    const rows = (dailyData.sxd || []).filter(r => r.loai === loai && r.ngay === ngay && r.may === may);
+    let sum = 0;
+    rows.forEach(r => {
+      sum += Number(r.kq) || 0;
+      const tr = document.createElement('tr');
+      tr.innerHTML = '<td>' + esc(r.gio) + '</td><td>' + esc(r.lsx) + '</td><td>' + esc(r.cn) + '</td><td><b>' + rnd(r.kq) + '</b></td>';
+      tb.appendChild(tr);
+    });
+    $('mayInfo').textContent = rows.length
+      ? rows.length + ' lần ghi nhận · Tổng ' + rnd(sum) + ' kg'
+      : 'Chưa có dữ liệu chi tiết — bấm 🔍 Xem báo cáo để tải lại';
+  } else {
+    $('mayHead').innerHTML = '<tr><th>Giờ</th><th>CN</th><th>Trơn</th><th>Màu</th></tr>';
+    const rows = (dailyData.phed || []).filter(r => r.loai === loai && r.ngay === ngay && r.may === may);
+    let sTron = 0, sMau = 0;
+    rows.forEach(r => {
+      sTron += Number(r.tron) || 0; sMau += Number(r.mau) || 0;
+      const tr = document.createElement('tr');
+      tr.innerHTML = '<td>' + esc(r.gio) + '</td><td>' + esc(r.cn) + '</td><td>' + esc(r.tron) + '</td><td>' + esc(r.mau) + '</td>';
+      tb.appendChild(tr);
+    });
+    $('mayInfo').textContent = rows.length
+      ? rows.length + ' lần ghi nhận · Trơn ' + rnd(sTron) + ' kg · Màu ' + rnd(sMau) + ' kg'
+      : 'Chưa có dữ liệu chi tiết — bấm 🔍 Xem báo cáo để tải lại';
+  }
+  $('mayModal').classList.add('show');
 }
 
 // Nút lọc Tổ — chỉ vẽ lại từ dữ liệu đã tải, không gọi mạng
@@ -1405,6 +1545,63 @@ $('btnChuyenSend').onclick = async () => {
 
 $('btnChuyenBack').onclick = async () => { await stopChuyenScan(); chuyenBatch=[]; renderChuyenBatch(); $('crumbs').innerHTML=''; show('step1'); };
 
+// ---------- Thống kê chuyển cuộn ----------
+let ccData = [];  // rows đã tải: [{time, ngay, lsx, kl, ghichu}]
+
+$('btnChuyenStat').onclick = () => {
+  show('step10');
+  const t = todayISO();
+  if (!$('ccFrom').value) $('ccFrom').value = t;
+  if (!$('ccTo').value) $('ccTo').value = t;
+  loadChuyenStat();
+};
+$('btnCcLoad').onclick = () => loadChuyenStat();
+$('btnCcToday').onclick = () => { const t = todayISO(); $('ccFrom').value = t; $('ccTo').value = t; loadChuyenStat(); };
+$('btnCcYesterday').onclick = () => { const y = yesterdayISO(); $('ccFrom').value = y; $('ccTo').value = y; loadChuyenStat(); };
+$('ccBack').onclick = () => show('step1');
+$('ccSearch').addEventListener('input', () => renderCcStat());
+
+function loadChuyenStat(){
+  if (!sheetUrl){ toast('Chưa có link Sheet'); return; }
+  let from = $('ccFrom').value || todayISO();
+  let to = $('ccTo').value || todayISO();
+  if (from > to){ const tmp = from; from = to; to = tmp; $('ccFrom').value = from; $('ccTo').value = to; }
+  $('ccStatus').textContent = '⏳ Đang tải...';
+  jsonp(sheetUrl + '?action=chuyenstat&from=' + from + '&to=' + to, 30000, function(data){
+    ccData = data.rows || [];
+    $('ccStatus').textContent = '✓ Đã cập nhật lúc ' + timeStr();
+    renderCcStat();
+  }, function(){
+    $('ccStatus').textContent = '⚠ Không tải được dữ liệu — kiểm tra mạng rồi thử lại';
+  });
+}
+
+function renderCcStat(){
+  const q = ($('ccSearch').value || '').toLowerCase().trim();
+  let rows = ccData;
+  if (q) rows = rows.filter(r => ('' + r.lsx).toLowerCase().indexOf(q) !== -1);
+  const rnd = n => Math.round((Number(n)||0) * 100) / 100;
+  const tongKg = rnd(rows.reduce((a, r) => a + (Number(r.kl)||0), 0));
+  const soLSXSet = {};
+  rows.forEach(r => { soLSXSet[r.lsx] = 1; });
+  $('ccSummary').innerHTML =
+    '<div class="sbox"><div class="snum">' + rows.length + '</div><div class="slbl">Số cuộn</div></div>' +
+    '<div class="sbox"><div class="snum">' + tongKg + '</div><div class="slbl">Tổng kg</div></div>' +
+    '<div class="sbox"><div class="snum">' + Object.keys(soLSXSet).length + '</div><div class="slbl">Số LSX</div></div>';
+  const tb = $('ccStatBody'); tb.innerHTML = '';
+  $('ccEmpty').classList.toggle('hide', rows.length > 0);
+  // Mới nhất lên đầu
+  rows.slice().reverse().forEach(r => {
+    const tr = document.createElement('tr');
+    const note = r.ghichu ? '<div style="font-size:11px;color:#dc2626">' + esc(r.ghichu) + '</div>' : '';
+    tr.innerHTML =
+      '<td>' + esc(r.time) + '</td>' +
+      '<td>' + esc(r.lsx) + '</td>' +
+      '<td><b>' + esc(r.kl) + '</b>' + note + '</td>';
+    tb.appendChild(tr);
+  });
+}
+
 // ---------- Nút Home 🏠: dừng camera, xóa trạng thái dở dang, về trang chính ----------
 async function goHome(){
   try { await stopScan(); } catch(e){}
@@ -1419,7 +1616,7 @@ async function goHome(){
   updateCrumbs();
   show('step1');
 }
-['cnHome','myHome','step4Home','dashHome','pheHome1','pheHome3','chuyenHome','dailyHome'].forEach(id => {
+['cnHome','myHome','step4Home','dashHome','pheHome1','pheHome3','chuyenHome','dailyHome','ccHome'].forEach(id => {
   const el = $(id);
   if (el) el.onclick = goHome;
 });
