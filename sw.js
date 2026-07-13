@@ -1,7 +1,6 @@
 // Service worker - cho phép cài như app & chạy giao diện offline
-// v16: index.html tải theo kiểu NETWORK-FIRST -> mỗi lần push code mới lên GitHub,
-// điện thoại tự nhận bản mới khi mở app (không còn kẹt bản cũ trong cache).
-const CACHE = 'tksx-v16';
+// v17: phân ca (7h-19h / 19h-7h), thống kê dạng cây drill-down
+const CACHE = 'tksx-v17';
 const ASSETS = [
   './', './index.html', './manifest.json', './icon-192.png', './icon-512.png',
   'https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js'
