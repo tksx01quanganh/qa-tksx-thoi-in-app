@@ -93,6 +93,22 @@
   .dash-summary .sbox { flex: 1; min-width: 80px; background: #f0fdfa; border: 1px solid #99f6e4; border-radius: 10px; padding: 8px; text-align: center; }
   .dash-summary .sbox .snum { font-size: 22px; font-weight: 700; color: #0f766e; }
   .dash-summary .sbox .slbl { font-size: 13px; color: #5a6473; }
+  /* Tree drill-down styles */
+  .tree-node { border-radius: 8px; margin-bottom: 4px; overflow: hidden; }
+  .tree-hdr { display: flex; align-items: center; padding: 10px 10px; cursor: pointer; font-weight: 600; font-size: 14px; gap: 6px; user-select: none; -webkit-user-select: none; }
+  .tree-hdr:active { opacity: .85; }
+  .tree-arrow { display: inline-block; font-size: 12px; transition: transform .15s; flex-shrink: 0; width: 16px; text-align: center; }
+  .tree-arrow.open { transform: rotate(90deg); }
+  .tree-label { flex: 1; }
+  .tree-val { font-size: 13px; color: #5a6473; white-space: nowrap; }
+  .tree-children { display: none; padding-left: 6px; }
+  .tree-children.open { display: block; }
+  .tree-lv0 > .tree-hdr { font-size: 15px; }
+  .tree-lv1 > .tree-hdr { padding-left: 14px; font-size: 14px; }
+  .tree-lv2 > .tree-hdr { padding-left: 22px; font-size: 13px; }
+  .tree-lv3 > .tree-hdr { padding-left: 30px; font-size: 13px; }
+  .tree-leaf { padding: 6px 10px 6px 38px; font-size: 12px; color: #374151; border-top: 1px solid #f0f0f0; line-height: 1.6; }
+  .tree-leaf b { color: #0f766e; }
 </style>
 </head>
 <body>
@@ -224,7 +240,7 @@
   <div class="empty hide" id="dashEmpty">Chưa có dữ liệu Master</div>
 </div>
 
-<!-- BƯỚC 9: Sản lượng theo ngày -->
+<!-- BƯỚC 9: Sản lượng theo ngày — cây drill-down -->
 <div class="card step hide" id="step9">
   <div class="navrow">
     <button class="nav-back" id="dailyBack" title="Quay lại">←</button>
@@ -248,17 +264,11 @@
   </div>
   <div class="dash-summary" id="dailySummary"></div>
   <div id="dailyContent" class="hide">
-    <p class="steptitle" style="margin:12px 0 6px">🏭 Sản lượng theo máy</p>
-    <table class="dash-table">
-      <thead><tr><th>Máy</th><th>Sản lượng (kg)</th><th>Số cuộn</th></tr></thead>
-      <tbody id="dailySxBody"></tbody>
-    </table>
+    <p class="steptitle" style="margin:12px 0 6px">🏭 Sản lượng</p>
+    <div id="dailySxTree"></div>
     <div class="empty hide" id="dailySxEmpty">Không có dữ liệu sản xuất trong khoảng ngày này</div>
-    <p class="steptitle" style="margin:16px 0 6px">🗑️ Phế theo máy</p>
-    <table class="dash-table">
-      <thead><tr><th>Máy</th><th>Phế trơn</th><th>Phế màu</th><th>Tổng</th></tr></thead>
-      <tbody id="dailyPheBody"></tbody>
-    </table>
+    <p class="steptitle" style="margin:16px 0 6px">🗑️ Phế</p>
+    <div id="dailyPheTree"></div>
     <div class="empty hide" id="dailyPheEmpty">Không có ghi nhận phế trong khoảng ngày này</div>
   </div>
 </div>
@@ -370,20 +380,7 @@
   </div>
 </div>
 
-<!-- Modal chi tiết theo Máy (Thống kê Sản lượng / Phế) -->
-<div class="modal" id="mayModal">
-  <div class="box">
-    <h3 id="mayTitle">🏭 Chi tiết máy</h3>
-    <div class="status" id="mayInfo" style="text-align:left;margin:0 0 8px"></div>
-    <div style="max-height:55vh;overflow-y:auto">
-      <table class="dash-table">
-        <thead id="mayHead"></thead>
-        <tbody id="mayBody"></tbody>
-      </table>
-    </div>
-    <button class="b-back full" id="mayClose" style="margin-top:10px">Đóng</button>
-  </div>
-</div>
+<!-- (Modal chi tiết máy đã chuyển sang dạng cây inline trong Thống kê Sản lượng) -->
 
 <!-- Modal PIN -->
 <div class="modal" id="pinModal">
@@ -414,7 +411,7 @@
 
 <script>
 const URLKEY = 'tksx_url', MKEY = 'tksx_masters', QKEY = 'tksx_queue', PINKEY = 'tksx_pin', PINCKEY = 'tksx_pin_chuyen';
-const DASHFULL = 'tksx_dash_full', DAILYCACHE = 'tksx_daily_cache2';
+const DASHFULL = 'tksx_dash_full', DAILYCACHE = 'tksx_daily_cache3'; // v3: thêm phân ca
 // Link Google Sheet gắn sẵn -> mọi điện thoại tự kết nối, chỉ cần mở 1 link Netlify
 const DEFAULT_URL = 'https://script.google.com/macros/s/AKfycbztgdaMXNFinyvZWXeO18tGHFFUKXW6V0XvvbWNR71L311WnsbVVWDreYSuLsdpZnrsiA/exec';
 let sheetUrl = localStorage.getItem(URLKEY) || DEFAULT_URL;
@@ -1166,7 +1163,12 @@ let dailyFilter = 'all';
 
 function renderDaily(data){
   data = data || {};
-  dailyData = { sx: data.sx || [], phe: data.phe || [], sxd: data.sxd || [], phed: data.phed || [] };
+  // Backward compat: nếu dữ liệu cũ không có trường 'ca', gán mặc định
+  const ensureCa = arr => (arr || []).map(r => {
+    if (!r.ca) r.ca = '';
+    return r;
+  });
+  dailyData = { sx: ensureCa(data.sx), phe: ensureCa(data.phe), sxd: ensureCa(data.sxd), phed: ensureCa(data.phed) };
   drawDaily();
 }
 
@@ -1176,7 +1178,7 @@ function dmy(k){
   return p.length === 3 ? p[2] + '/' + p[1] + '/' + p[0] : ('' + (k || ''));
 }
 
-// Thứ tự nhóm: Thổi trước, In sau, loại khác (nếu có) xuống cuối
+// Thứ tự nhóm: Thổi trước, In sau
 function dailyGroups(rows){
   const order = ['Thổi', 'In'];
   rows.forEach(r => { if (order.indexOf(r.loai) === -1) order.push(r.loai); });
@@ -1190,11 +1192,42 @@ function grpStyle(g){
       : { bg: '#f3f4f6', color: '#374151', icon: '⚙️' };
 }
 
+// Tạo 1 node cây có thể mở/đóng
+function mkTreeNode(level, bgColor, textColor, label, value, children, startOpen){
+  const node = document.createElement('div');
+  node.className = 'tree-node tree-lv' + level;
+  const arrow = startOpen ? 'tree-arrow open' : 'tree-arrow';
+  const childrenOpen = startOpen ? 'tree-children open' : 'tree-children';
+  node.innerHTML = '<div class="tree-hdr" style="background:' + bgColor + ';color:' + textColor + '">' +
+    '<span class="' + arrow + '">▶</span>' +
+    '<span class="tree-label">' + label + '</span>' +
+    '<span class="tree-val">' + value + '</span>' +
+    '</div>';
+  const childDiv = document.createElement('div');
+  childDiv.className = childrenOpen;
+  if (typeof children === 'string') {
+    childDiv.innerHTML = children;
+  } else if (children instanceof Node) {
+    childDiv.appendChild(children);
+  } else if (Array.isArray(children)) {
+    children.forEach(c => childDiv.appendChild(c));
+  }
+  node.appendChild(childDiv);
+  // Toggle
+  node.querySelector('.tree-hdr').addEventListener('click', function(){
+    const ar = this.querySelector('.tree-arrow');
+    const ch = this.nextElementSibling;
+    ar.classList.toggle('open');
+    ch.classList.toggle('open');
+  });
+  return node;
+}
+
 function drawDaily(){
   const rnd = n => Math.round(n * 100) / 100;
   const sxAll = dailyData.sx, pheAll = dailyData.phe;
 
-  // Summary: luôn hiện tổng cả 2 tổ (để so sánh nhanh)
+  // Summary tổng
   let tongThoi = 0, tongIn = 0, tongPhe = 0;
   sxAll.forEach(r => { if (r.loai === 'Thổi') tongThoi += Number(r.tong)||0; else if (r.loai === 'In') tongIn += Number(r.tong)||0; });
   pheAll.forEach(r => { tongPhe += (Number(r.tron)||0) + (Number(r.mau)||0); });
@@ -1203,15 +1236,14 @@ function drawDaily(){
     '<div class="sbox"><div class="snum">' + rnd(tongIn) + '</div><div class="slbl">🖨️ In (kg)</div></div>' +
     '<div class="sbox"><div class="snum" style="color:#dc2626">' + rnd(tongPhe) + '</div><div class="slbl">🗑️ Phế (kg)</div></div>';
 
-  // Áp bộ lọc Tổ
   const sx = dailyFilter === 'all' ? sxAll : sxAll.filter(r => r.loai === dailyFilter);
   const phe = dailyFilter === 'all' ? pheAll : pheAll.filter(r => r.loai === dailyFilter);
 
-  // Danh sách ngày trong nhóm (tăng dần)
-  const daysOf = rows => { const d = []; rows.forEach(r => { if (d.indexOf(r.ngay) === -1) d.push(r.ngay); }); d.sort(); return d; };
+  const unique = (arr, key) => { const s = []; arr.forEach(r => { if (s.indexOf(r[key]) === -1) s.push(r[key]); }); return s; };
+  const daysOf = rows => { const d = unique(rows, 'ngay'); d.sort(); return d; };
 
-  // Bảng SX: nhóm Tổ → Ngày → Máy (bấm máy xem chi tiết LSX)
-  const sxTb = $('dailySxBody'); sxTb.innerHTML = '';
+  // ========== CÂY SẢN XUẤT: Tổ → Ngày → Ca → Máy → (CN + LSX) ==========
+  const sxTree = $('dailySxTree'); sxTree.innerHTML = '';
   $('dailySxEmpty').classList.toggle('hide', sx.length > 0);
   dailyGroups(sx).forEach(g => {
     const rows = sx.filter(r => r.loai === g);
@@ -1219,30 +1251,78 @@ function drawDaily(){
     const st = grpStyle(g);
     const subKg = rnd(rows.reduce((a, r) => a + (Number(r.tong)||0), 0));
     const subCuon = rows.reduce((a, r) => a + (Number(r.soCuon)||0), 0);
-    const hdr = document.createElement('tr');
-    hdr.innerHTML = '<td colspan="3" style="background:' + st.bg + ';color:' + st.color + ';font-weight:700">' +
-      st.icon + ' ' + esc(g) + ' — ' + subKg + ' kg · ' + subCuon + ' cuộn</td>';
-    sxTb.appendChild(hdr);
+
+    const dayNodes = [];
     daysOf(rows).forEach(d => {
       const dr = rows.filter(r => r.ngay === d);
       const dKg = rnd(dr.reduce((a, r) => a + (Number(r.tong)||0), 0));
       const dCuon = dr.reduce((a, r) => a + (Number(r.soCuon)||0), 0);
-      const dh = document.createElement('tr');
-      dh.innerHTML = '<td colspan="3" style="background:#f7f9fc;font-weight:600;padding-left:14px">📅 ' + esc(dmy(d)) + ' — ' + dKg + ' kg · ' + dCuon + ' cuộn</td>';
-      sxTb.appendChild(dh);
-      dr.forEach(r => {
-        const tr = document.createElement('tr');
-        tr.innerHTML =
-          '<td style="padding-left:26px"><a href="#" class="lsx-hist may-sx" data-loai="' + esc(r.loai) + '" data-ngay="' + esc(r.ngay) + '" data-may="' + esc(r.may) + '">' + esc(r.may) + ' ▸</a></td>' +
-          '<td><b>' + esc(r.tong) + '</b></td>' +
-          '<td>' + esc(r.soCuon) + '</td>';
-        sxTb.appendChild(tr);
+
+      // Nhóm theo Ca
+      const cas = unique(dr, 'ca');
+      // Sắp xếp Ca Ngày trước Ca Đêm
+      cas.sort((a, b) => a === 'Ngày' ? -1 : b === 'Ngày' ? 1 : 0);
+
+      const caNodes = [];
+      cas.forEach(ca => {
+        const cr = dr.filter(r => r.ca === ca);
+        const cKg = rnd(cr.reduce((a, r) => a + (Number(r.tong)||0), 0));
+        const cCuon = cr.reduce((a, r) => a + (Number(r.soCuon)||0), 0);
+        const caIcon = ca === 'Ngày' ? '☀️' : '🌙';
+
+        const mayNodes = [];
+        cr.forEach(r => {
+          // Chi tiết: lấy từ sxd tất cả dòng khớp loai + ngay + ca + may
+          const details = (dailyData.sxd || []).filter(dd =>
+            dd.loai === g && dd.ngay === d && dd.ca === ca && dd.may === r.may
+          );
+          // Nhóm theo CN
+          const cnMap = {};
+          details.forEach(dd => {
+            if (!cnMap[dd.cn]) cnMap[dd.cn] = [];
+            cnMap[dd.cn].push(dd);
+          });
+          let leafHtml = '';
+          Object.keys(cnMap).forEach(cn => {
+            const lines = cnMap[cn];
+            const cnKg = rnd(lines.reduce((a, l) => a + (Number(l.kq)||0), 0));
+            leafHtml += '<div class="tree-leaf"><b>👷 ' + esc(cn) + '</b> — ' + cnKg + ' kg</div>';
+            lines.forEach(l => {
+              leafHtml += '<div class="tree-leaf" style="padding-left:50px;font-size:11px;color:#5a6473">' +
+                esc(l.gio) + ' · LSX: ' + esc(l.lsx) + ' · <b>' + rnd(Number(l.kq)||0) + ' kg</b></div>';
+            });
+          });
+          if (!leafHtml) leafHtml = '<div class="tree-leaf" style="color:#98a2b3">Chưa có chi tiết</div>';
+          const mayNode = mkTreeNode(3, '#fff', '#374151',
+            '⚙️ ' + esc(r.may),
+            '<b>' + esc(r.tong) + '</b> kg · ' + esc(r.soCuon) + ' cuộn',
+            leafHtml, false);
+          mayNodes.push(mayNode);
+        });
+
+        const caNode = mkTreeNode(2, '#f7f9fc', '#374151',
+          caIcon + ' Ca ' + ca,
+          cKg + ' kg · ' + cCuon + ' cuộn',
+          mayNodes, false);
+        caNodes.push(caNode);
       });
+
+      const dayNode = mkTreeNode(1, '#f0fdfa', '#0f766e',
+        '📅 ' + dmy(d),
+        dKg + ' kg · ' + dCuon + ' cuộn',
+        caNodes, false);
+      dayNodes.push(dayNode);
     });
+
+    const toNode = mkTreeNode(0, st.bg, st.color,
+      st.icon + ' ' + esc(g),
+      subKg + ' kg · ' + subCuon + ' cuộn',
+      dayNodes, true);
+    sxTree.appendChild(toNode);
   });
 
-  // Bảng Phế: nhóm Tổ → Ngày → Máy giống bảng SX
-  const pheTb = $('dailyPheBody'); pheTb.innerHTML = '';
+  // ========== CÂY PHẾ: Tổ → Ngày → Ca → Máy → (CN chi tiết) ==========
+  const pheTree = $('dailyPheTree'); pheTree.innerHTML = '';
   $('dailyPheEmpty').classList.toggle('hide', phe.length > 0);
   dailyGroups(phe).forEach(g => {
     const rows = phe.filter(r => r.loai === g);
@@ -1251,80 +1331,65 @@ function drawDaily(){
     const subTron = rnd(rows.reduce((a, r) => a + (Number(r.tron)||0), 0));
     const subMau = rnd(rows.reduce((a, r) => a + (Number(r.mau)||0), 0));
     const subTong = rnd(subTron + subMau);
-    const hdr = document.createElement('tr');
-    hdr.innerHTML = '<td colspan="4" style="background:' + st.bg + ';color:' + st.color + ';font-weight:700">' +
-      st.icon + ' ' + esc(g) + ' — ' + subTong + ' kg (trơn ' + subTron + ' · màu ' + subMau + ')</td>';
-    pheTb.appendChild(hdr);
+
+    const dayNodes = [];
     daysOf(rows).forEach(d => {
       const dr = rows.filter(r => r.ngay === d);
       const dTron = rnd(dr.reduce((a, r) => a + (Number(r.tron)||0), 0));
       const dMau = rnd(dr.reduce((a, r) => a + (Number(r.mau)||0), 0));
-      const dh = document.createElement('tr');
-      dh.innerHTML = '<td colspan="4" style="background:#f7f9fc;font-weight:600;padding-left:14px">📅 ' + esc(dmy(d)) + ' — ' + rnd(dTron + dMau) + ' kg</td>';
-      pheTb.appendChild(dh);
-      dr.forEach(r => {
-        const tr = document.createElement('tr');
-        const tong = rnd((Number(r.tron)||0) + (Number(r.mau)||0));
-        tr.innerHTML =
-          '<td style="padding-left:26px"><a href="#" class="lsx-hist may-phe" data-loai="' + esc(r.loai) + '" data-ngay="' + esc(r.ngay) + '" data-may="' + esc(r.may) + '">' + esc(r.may) + ' ▸</a></td>' +
-          '<td>' + esc(r.tron) + '</td>' +
-          '<td>' + esc(r.mau) + '</td>' +
-          '<td><b>' + tong + '</b></td>';
-        pheTb.appendChild(tr);
+
+      const cas = unique(dr, 'ca');
+      cas.sort((a, b) => a === 'Ngày' ? -1 : b === 'Ngày' ? 1 : 0);
+
+      const caNodes = [];
+      cas.forEach(ca => {
+        const cr = dr.filter(r => r.ca === ca);
+        const cTron = rnd(cr.reduce((a, r) => a + (Number(r.tron)||0), 0));
+        const cMau = rnd(cr.reduce((a, r) => a + (Number(r.mau)||0), 0));
+        const caIcon = ca === 'Ngày' ? '☀️' : '🌙';
+
+        const mayNodes = [];
+        cr.forEach(r => {
+          const details = (dailyData.phed || []).filter(dd =>
+            dd.loai === g && dd.ngay === d && dd.ca === ca && dd.may === r.may
+          );
+          let leafHtml = '';
+          details.forEach(dd => {
+            leafHtml += '<div class="tree-leaf">' +
+              esc(dd.gio) + ' · 👷 ' + esc(dd.cn) +
+              ' · Trơn: ' + esc(dd.tron) + ' · Màu: ' + esc(dd.mau) + '</div>';
+          });
+          if (!leafHtml) leafHtml = '<div class="tree-leaf" style="color:#98a2b3">Chưa có chi tiết</div>';
+          const tong = rnd((Number(r.tron)||0) + (Number(r.mau)||0));
+          const mayNode = mkTreeNode(3, '#fff', '#374151',
+            '⚙️ ' + esc(r.may),
+            tong + ' kg (trơn ' + esc(r.tron) + ' · màu ' + esc(r.mau) + ')',
+            leafHtml, false);
+          mayNodes.push(mayNode);
+        });
+
+        const caNode = mkTreeNode(2, '#f7f9fc', '#374151',
+          caIcon + ' Ca ' + ca,
+          rnd(cTron + cMau) + ' kg',
+          mayNodes, false);
+        caNodes.push(caNode);
       });
+
+      const dayNode = mkTreeNode(1, '#fff5f5', '#dc2626',
+        '📅 ' + dmy(d),
+        rnd(dTron + dMau) + ' kg',
+        caNodes, false);
+      dayNodes.push(dayNode);
     });
+
+    const toNode = mkTreeNode(0, st.bg, st.color,
+      st.icon + ' ' + esc(g) + ' Phế',
+      subTong + ' kg (trơn ' + subTron + ' · màu ' + subMau + ')',
+      dayNodes, true);
+    pheTree.appendChild(toNode);
   });
 
   $('dailyContent').classList.remove('hide');
-}
-
-// ---------- Chi tiết theo Máy (modal) ----------
-$('dailySxBody').addEventListener('click', e => {
-  const a = e.target.closest('.may-sx');
-  if (!a) return;
-  e.preventDefault();
-  openMayDetail('sx', a.dataset.loai, a.dataset.ngay, a.dataset.may);
-});
-$('dailyPheBody').addEventListener('click', e => {
-  const a = e.target.closest('.may-phe');
-  if (!a) return;
-  e.preventDefault();
-  openMayDetail('phe', a.dataset.loai, a.dataset.ngay, a.dataset.may);
-});
-$('mayClose').onclick = () => $('mayModal').classList.remove('show');
-
-function openMayDetail(kind, loai, ngay, may){
-  const rnd = n => Math.round((Number(n)||0) * 100) / 100;
-  $('mayTitle').textContent = (kind === 'sx' ? '🏭 ' : '🗑️ ') + may + ' — ' + dmy(ngay);
-  const tb = $('mayBody'); tb.innerHTML = '';
-  if (kind === 'sx'){
-    $('mayHead').innerHTML = '<tr><th>Giờ</th><th>LSX</th><th>CN</th><th>KL (kg)</th></tr>';
-    const rows = (dailyData.sxd || []).filter(r => r.loai === loai && r.ngay === ngay && r.may === may);
-    let sum = 0;
-    rows.forEach(r => {
-      sum += Number(r.kq) || 0;
-      const tr = document.createElement('tr');
-      tr.innerHTML = '<td>' + esc(r.gio) + '</td><td>' + esc(r.lsx) + '</td><td>' + esc(r.cn) + '</td><td><b>' + rnd(r.kq) + '</b></td>';
-      tb.appendChild(tr);
-    });
-    $('mayInfo').textContent = rows.length
-      ? rows.length + ' lần ghi nhận · Tổng ' + rnd(sum) + ' kg'
-      : 'Chưa có dữ liệu chi tiết — bấm 🔍 Xem báo cáo để tải lại';
-  } else {
-    $('mayHead').innerHTML = '<tr><th>Giờ</th><th>CN</th><th>Trơn</th><th>Màu</th></tr>';
-    const rows = (dailyData.phed || []).filter(r => r.loai === loai && r.ngay === ngay && r.may === may);
-    let sTron = 0, sMau = 0;
-    rows.forEach(r => {
-      sTron += Number(r.tron) || 0; sMau += Number(r.mau) || 0;
-      const tr = document.createElement('tr');
-      tr.innerHTML = '<td>' + esc(r.gio) + '</td><td>' + esc(r.cn) + '</td><td>' + esc(r.tron) + '</td><td>' + esc(r.mau) + '</td>';
-      tb.appendChild(tr);
-    });
-    $('mayInfo').textContent = rows.length
-      ? rows.length + ' lần ghi nhận · Trơn ' + rnd(sTron) + ' kg · Màu ' + rnd(sMau) + ' kg'
-      : 'Chưa có dữ liệu chi tiết — bấm 🔍 Xem báo cáo để tải lại';
-  }
-  $('mayModal').classList.add('show');
 }
 
 // Nút lọc Tổ — chỉ vẽ lại từ dữ liệu đã tải, không gọi mạng
