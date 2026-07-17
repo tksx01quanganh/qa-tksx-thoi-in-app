@@ -661,12 +661,12 @@ function stopScan(){
 function parseQR(txt){
   txt = ('' + (txt==null?'':txt)).trim();
   const parts = txt.split('/');
-  if (parts.length !== 2) return null;
+  if (parts.length < 2) return null; // Chấp nhận QR 2-4 thành phần, chỉ lấy 2 thành phần đầu
   const lsx = parts[0].trim();
   const klStr = parts[1].trim();
   const kl = Number(klStr);
   if (!lsx || !klStr || !isFinite(kl) || kl <= 0) return null;
-  return { data: txt, lsx: lsx, klyc: kl };
+  return { data: lsx + '/' + klStr, lsx: lsx, klyc: kl };
 }
 function tryAddData(txt, fromScan){
   const p = parseQR(txt);
