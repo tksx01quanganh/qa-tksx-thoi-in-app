@@ -177,9 +177,10 @@
     <div class="lsxbox hide" id="pendingBox" style="margin-top:10px"></div>
     <button class="b-add full hide" id="btnAddPending">📷 Scan LSX khác</button>
 
-    <label style="margin-top:10px">Hoặc nhập tay (LSX/Khối lượng)</label>
+    <label style="margin-top:10px">Hoặc nhập tay</label>
     <div class="row">
-      <input class="fld" id="manualFld" placeholder="VD: LSX001/250" autocomplete="off" inputmode="text" enterkeyhint="done" style="margin-bottom:0">
+      <input class="fld" id="manualLsxFld" placeholder="LSX (VD: LSX001)" autocomplete="off" inputmode="text" enterkeyhint="next" style="margin-bottom:0">
+      <input class="fld" id="manualKlFld" placeholder="KL yêu cầu (VD: 250)" autocomplete="off" inputmode="decimal" enterkeyhint="done" style="margin-bottom:0">
       <button class="b-manual" id="btnManual" style="padding:0 18px;width:auto">＋</button>
     </div>
 
@@ -691,12 +692,20 @@ function tryAddData(txt, fromScan){
 
 // Nhập tay
 $('btnManual').onclick = () => {
-  const v = $('manualFld').value.trim();
-  if (!v){ $('manualFld').focus(); return; }
-  if (tryAddData(v, false)) $('manualFld').value='';
-  $('manualFld').focus();
+  const lsx = $('manualLsxFld').value.trim();
+  const kl = $('manualKlFld').value.trim().replace(',', '.');
+  if (!lsx){ $('manualLsxFld').focus(); return; }
+  if (!kl){ $('manualKlFld').focus(); return; }
+  if (tryAddData(lsx + '/' + kl, false)){
+    $('manualLsxFld').value = '';
+    $('manualKlFld').value = '';
+    $('manualLsxFld').focus();
+  } else {
+    $('manualKlFld').focus();
+  }
 };
-$('manualFld').addEventListener('keydown', e => { if (e.key==='Enter'){ e.preventDefault(); $('btnManual').click(); } });
+$('manualLsxFld').addEventListener('keydown', e => { if (e.key==='Enter'){ e.preventDefault(); $('manualKlFld').focus(); } });
+$('manualKlFld').addEventListener('keydown', e => { if (e.key==='Enter'){ e.preventDefault(); $('btnManual').click(); } });
 
 function renderBatch(){
   const has = batch.length>0;
