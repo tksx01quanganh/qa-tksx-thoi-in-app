@@ -422,7 +422,7 @@ let storedPINChuyen = localStorage.getItem(PINCKEY) || '';  // PIN chuyển cu�
 let isAuthed = false;  // đã nhập đúng PIN SX trong phiên này chưa
 let isAuthChuyen = false;  // đã nhập đúng PIN chuyển cuộn chưa
 let pinTarget = 'sx';  // 'sx' hoặc 'chuyen' — PIN modal đang check cho flow nào
-let sel = { mode: '', cn: '', may: '' };
+let sel = { mode: '', cn: '', may: '', cnCode: '', mayCode: '' };
 let qr = null, scanning = false, lastCode = '', lastT = 0;
 // Trạng thái cuộn đang quét
 let batch = [];          // [{data, lsx, klyc}]
@@ -473,7 +473,7 @@ function updateCrumbs(){
 // ---------- Bước 1 ----------
 document.querySelectorAll('[data-mode]').forEach(b => b.onclick = () => {
   const go = () => {
-    sel.mode = b.dataset.mode; sel.cn=''; sel.may='';
+    sel.mode = b.dataset.mode; sel.cn=''; sel.may=''; sel.cnCode=''; sel.mayCode='';
     updateCrumbs();
     if (!masters) { toast('Chưa có danh sách. Bấm ⚙️ để kết nối & tải.'); openSettings(); return; }
     renderPicker('cn');
@@ -510,7 +510,8 @@ function renderPicker(kind){
       // Chỉ hiển thị Tên (mã vẫn dùng được để tìm kiếm); nếu chưa có tên thì hiện mã
       b.innerHTML = esc(x.name || x.code);
       const stored = x.name || x.code;
-      b.onclick = () => pick(kind, stored);
+      const code = x.code || '';
+      b.onclick = () => pick(kind, stored, code);
       listEl.appendChild(b);
     });
   };
@@ -518,10 +519,10 @@ function renderPicker(kind){
   searchEl.oninput = () => draw(searchEl.value);
   draw('');
 }
-function pick(kind, value){
-  if (kind==='cn'){ sel.cn = value; updateCrumbs(); renderPicker('may'); show('step3'); }
+function pick(kind, value, code){
+  if (kind==='cn'){ sel.cn = value; sel.cnCode = code || ''; updateCrumbs(); renderPicker('may'); show('step3'); }
   else {
-    sel.may = value; updateCrumbs();
+    sel.may = value; sel.mayCode = code || ''; updateCrumbs();
     if (appMode === 'phe') enterPheForm();
     else enterStep4();
   }
@@ -823,6 +824,7 @@ $('btnConfirmSend').onclick = async () => {
   const time = nowStr();
   const rows = batch.map((b,i)=>({
     time: time, loai: sel.mode, cn: sel.cn, may: sel.may,
+    cnCode: sel.cnCode, mayCode: sel.mayCode,
     data: b.data, lsx: b.lsx, klyc: b.klyc,
     phuongthuc: curMethod, klcuon: curKlcuon, ketqua: curAlloc[i]
   }));
@@ -836,7 +838,7 @@ $('btnConfirmSend').onclick = async () => {
   $('pendingBox').classList.add('hide'); $('btnAddPending').classList.add('hide');
   renderBatch();
   showPhase('scan');
-  sel = { mode:'', cn:'', may:'' };
+  sel = { mode:'', cn:'', may:'', cnCode:'', mayCode:'' };
   updateCrumbs();
   show('step1');
   renderQueueBadge();
@@ -856,7 +858,7 @@ $('btnPhe').onclick = () => {
 };
 // Chọn công đoạn phế
 document.querySelectorAll('[data-phe-mode]').forEach(b => b.onclick = () => {
-  sel.mode = b.dataset.pheMode; sel.cn=''; sel.may='';
+  sel.mode = b.dataset.pheMode; sel.cn=''; sel.may=''; sel.cnCode=''; sel.mayCode='';
   updateCrumbs();
   if (!masters) { toast('Chưa có danh sách. Bấm ⚙️ để kết nối & tải.'); openSettings(); return; }
   renderPicker('cn');
@@ -882,13 +884,14 @@ $('btnPheSend').onclick = () => {
   const time = nowStr();
   const row = {
     time: time, loai: sel.mode, cn: sel.cn, may: sel.may,
+    cnCode: sel.cnCode, mayCode: sel.mayCode,
     pheTron: tron, pheMau: mau
   };
   queue.push({ ts: Date.now(), batchId: genId(), type: 'phe', rows: [row] });
   saveQ();
   toast('✅ Đã lưu phế: Trơn ' + tron + ' kg, Màu ' + mau + ' kg');
   // Reset về step6 để nhập tiếp nếu cần
-  sel = { mode:'', cn:'', may:'' };
+  sel = { mode:'', cn:'', may:'', cnCode:'', mayCode:'' };
   updateCrumbs();
   appMode = 'sx';
   show('step1');
@@ -1685,7 +1688,7 @@ async function goHome(){
   chuyenBatch = []; chuyenLastCode = '';
   renderChuyenBatch();
   showPhase('scan');
-  sel = { mode:'', cn:'', may:'' };
+  sel = { mode:'', cn:'', may:'', cnCode:'', mayCode:'' };
   appMode = 'sx';
   updateCrumbs();
   show('step1');
