@@ -63,6 +63,7 @@
   .linkbtn { background: none; color: #0f766e; text-decoration: underline; font-size: 13px; padding: 0; width: auto; font-weight: 600; }
   .qbar { background: #fef3c7; border: 1px solid #fcd34d; color: #92400e; border-radius: 10px; padding: 9px 12px; font-size: 13px; font-weight: 600; margin: 0 2px 10px; }
   .qbar.ok { background: #dcfce7; border-color: #86efac; color: #166534; }
+  .qbar.err { background: #fee2e2; border-color: #fca5a5; color: #991b1b; }
   /* Hàng nút điều hướng trên cùng: ← quay lại | 🏠 về trang chính */
   .navrow { display: flex; gap: 8px; margin: 0 0 10px; }
   .navrow button { flex: 1; height: 42px; padding: 0; line-height: 1; }
@@ -118,6 +119,7 @@
 </header>
 <div class="crumbs" id="crumbs"></div>
 <div class="qbar hide" id="queueBar"></div>
+<div class="qbar err hide" id="failBar"></div>
 
 <!-- MÀN HÌNH CHÍNH: 2 nhóm chức năng -->
 <div class="step hide" id="step1">
@@ -412,6 +414,8 @@
 
 <script>
 const URLKEY = 'tksx_url', MKEY = 'tksx_masters', QKEY = 'tksx_queue', PINKEY = 'tksx_pin', PINCKEY = 'tksx_pin_chuyen';
+const FKEY = 'tksx_queue_failed';   // các lô gửi lỗi vĩnh viễn, tách riêng để không kẹt hàng đợi
+const MAX_TRIES = 3;                // số lần thử lại khi SERVER trả lỗi (lỗi mạng không tính)
 const DASHFULL = 'tksx_dash_full', DAILYCACHE = 'tksx_daily_cache3'; // v3: thêm phân ca
 // Link Google Sheet gắn sẵn -> mọi điện thoại tự kết nối, chỉ cần mở 1 link Netlify
 const DEFAULT_URL = 'https://script.google.com/macros/s/AKfycbztgdaMXNFinyvZWXeO18tGHFFUKXW6V0XvvbWNR71L311WnsbVVWDreYSuLsdpZnrsiA/exec';
@@ -444,12 +448,37 @@ let chuyenScanning = false;
 let chuyenPaused = false;
 let chuyenLastCode = '', chuyenLastT = 0;
 // Hàng đợi gửi (lưu trên máy) — mất mạng vẫn giữ, có mạng tự gửi
-let queue = JSON.parse(localStorage.getItem(QKEY) || '[]');
+// Đọc an toàn: nếu localStorage hỏng thì KHÔNG được để app chết trắng màn hình.
+// Giữ lại chuỗi hỏng sang key backup để còn khôi phục thủ công nếu cần.
+function loadQ_(key){
+  var raw = null;
+  try { raw = localStorage.getItem(key); } catch(e){ return []; }
+  if (!raw) return [];
+  try {
+    var arr = JSON.parse(raw);
+    return Array.isArray(arr) ? arr : [];
+  } catch(e){
+    try { localStorage.setItem(key + '_backup_' + Date.now(), raw); } catch(e2){}
+    try { localStorage.removeItem(key); } catch(e2){}
+    return [];
+  }
+}
+let queue = loadQ_(QKEY);
+let queueFailed = loadQ_(FKEY);   // các lô server từ chối vĩnh viễn — không gửi lại tự động
 let flushing = false;
+let sending = false;              // khóa nút Gửi, chặn bấm 2 lần tạo lô trùng
 
 const $ = id => document.getElementById(id);
 const esc = s => ('' + (s==null?'':s)).replace(/[&<>]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
-const saveQ = () => localStorage.setItem(QKEY, JSON.stringify(queue));
+// Ghi hàng đợi xuống máy. Nếu localStorage đầy/lỗi -> phải BÁO, tuyệt đối không im lặng
+// vì lúc đó dữ liệu chỉ còn trong RAM, tắt app là mất.
+function saveQ(){
+  try { localStorage.setItem(QKEY, JSON.stringify(queue)); }
+  catch(e){ toast('⚠ Không lưu được vào bộ nhớ máy! Giữ app mở tới khi gửi xong.'); }
+}
+function saveFailed(){
+  try { localStorage.setItem(FKEY, JSON.stringify(queueFailed)); } catch(e){}
+}
 const genId = () => Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 8);
 function toast(m){ const t=$('toast'); t.textContent=m; t.classList.add('show'); clearTimeout(t._t); t._t=setTimeout(()=>t.classList.remove('show'),2400); }
 function nowStr(){ const d=new Date(),p=n=>String(n).padStart(2,'0'); return `${p(d.getDate())}/${p(d.getMonth()+1)}/${d.getFullYear()} ${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`; }
@@ -777,73 +806,158 @@ $('btnCalc').onclick = () => {
 $('btnBackToWeight').onclick = () => { showPhase('weight'); setTimeout(()=>$('klcuonFld').focus(),150); };
 
 // ---------- Hàng đợi gửi (offline-safe) ----------
+// Đồng hồ đếm giây khi đang gửi — để công nhân thấy app vẫn đang chạy chứ không đứng hình,
+// đồng thời giúp chẩn đoán: 1 lần gửi chậm hay app phải gửi lại nhiều lần.
+let flushStart = 0, tickTimer = null;
+function startTick(){ if (!tickTimer) tickTimer = setInterval(renderQueueBadge, 1000); }
+function stopTick(){ if (tickTimer){ clearInterval(tickTimer); tickTimer = null; } }
+
 function renderQueueBadge(){
+  renderFailBar();
   const el = $('queueBar');
   if (!queue.length){ el.classList.add('hide'); return; }
   el.classList.remove('hide'); el.classList.remove('ok');
   const n = queue.length;
   if (!navigator.onLine) el.textContent = '📦 ' + n + ' cuộn đã lưu tạm — chưa có mạng, sẽ tự gửi khi có mạng';
-  else if (flushing)     el.textContent = '📤 Đang gửi... còn ' + n + ' cuộn chờ';
+  else if (flushing){
+    const sec = flushStart ? Math.round((Date.now() - flushStart) / 1000) : 0;
+    const lan = (queue[0] && queue[0].posts > 1) ? ' · lần thử ' + queue[0].posts : '';
+    el.textContent = '📤 Đang gửi... ' + sec + 's · còn ' + n + ' cuộn' + lan;
+  }
   else                   el.textContent = '⏳ ' + n + ' cuộn chờ gửi';
 }
+// Thanh cảnh báo đỏ: có lô server từ chối, KHÔNG tự gửi lại được, cần người xử lý
+function renderFailBar(){
+  const fb = $('failBar');
+  if (!fb) return;
+  if (!queueFailed.length){ fb.classList.add('hide'); return; }
+  fb.classList.remove('hide');
+  fb.textContent = '⚠ ' + queueFailed.length + ' lô GỬI LỖI, chưa vào hệ thống — báo tổ trưởng/quản lý ngay';
+}
+
+// Phân loại kết quả 1 lần POST:
+//   'ok'    -> server đã nhận (kể cả dup) -> bỏ khỏi hàng đợi
+//   'busy'  -> server bận (khóa) -> giữ nguyên, KHÔNG tính là lỗi dữ liệu
+//   'bad'   -> server trả lời nhưng từ chối -> tính 1 lần lỗi
+//   'net'   -> không liên lạc được / trả về không phải JSON -> giữ nguyên, thử lại sau
+async function postItem_(item){
+  let res, txt;
+  try {
+    res = await fetch(sheetUrl, {
+      method:'POST',
+      headers:{'Content-Type':'text/plain;charset=utf-8'},
+      body: JSON.stringify({ batchId: item.batchId || '', type: item.type || '', rows: item.rows })
+    });
+    txt = await res.text();
+  } catch(e){ return { kind:'net', msg:'Không kết nối được' }; }
+
+  let obj = null;
+  // CHỈ chấp nhận JSON hợp lệ. Trước đây có nhánh dò chữ "OK" trong text —
+  // trang lỗi HTML của Google cũng chứa "OK" -> app tưởng gửi xong rồi XÓA dữ liệu.
+  try { obj = JSON.parse(txt); } catch(e){ return { kind:'net', msg:'Phản hồi không hợp lệ (có thể link Apps Script sai hoặc hết hạn)' }; }
+  if (!obj || typeof obj !== 'object') return { kind:'net', msg:'Phản hồi không hợp lệ' };
+
+  if (obj.ok === true) return { kind:'ok' };
+  const err = '' + (obj.error || '');
+  if (/BUSY/i.test(err)) return { kind:'busy', msg:'Server đang bận' };
+  return { kind:'bad', msg: err || 'Server từ chối' };
+}
+
 async function flushQueue(){
   if (flushing) return;
   if (!queue.length){ renderQueueBadge(); return; }
   if (!navigator.onLine || !sheetUrl){ renderQueueBadge(); return; }
-  flushing = true; renderQueueBadge();
+  flushing = true; flushStart = Date.now(); startTick(); renderQueueBadge();
+  let hadError = '';
   while (queue.length){
     const item = queue[0];
-    try {
-      const res = await fetch(sheetUrl, {
-        method:'POST',
-        headers:{'Content-Type':'text/plain;charset=utf-8'},
-        body: JSON.stringify({ batchId: item.batchId || '', type: item.type || '', rows: item.rows })
-      });
-      const txt = await res.text();
-      let ok = false;
-      try { ok = JSON.parse(txt).ok === true; } catch(_) { ok = /(^|[^A-Za-z])OK([^A-Za-z]|$)/i.test(txt); }
-      if (ok){ queue.shift(); saveQ(); sentRolls++; renderQueueBadge(); }
-      else { break; }
-    } catch(e){
+    item.posts = (item.posts || 0) + 1;     // đếm số lần thực sự gửi lên (để chẩn đoán)
+    const t0 = Date.now();
+    const r = await postItem_(item);
+    console.log('[TKSX] gửi lô ' + item.batchId + ' lần ' + item.posts +
+                ' -> ' + r.kind + ' sau ' + Math.round((Date.now() - t0) / 1000) + 's');
+
+    if (r.kind === 'ok'){
+      queue.shift(); saveQ(); sentRolls++; renderQueueBadge();
+      continue;
+    }
+    if (r.kind === 'net' || r.kind === 'busy'){
+      // Lỗi tạm thời -> dừng vòng này, giữ nguyên thứ tự, lần flush sau thử lại
+      hadError = r.msg || '';
       break;
     }
+    // r.kind === 'bad': server có trả lời và từ chối -> đếm số lần
+    item.tries = (item.tries || 0) + 1;
+    item.lastErr = r.msg || '';
+    if (item.tries >= MAX_TRIES){
+      // Tách sang danh sách lỗi để KHÔNG chặn các cuộn phía sau (trước đây break -> kẹt toàn bộ)
+      queueFailed.push(queue.shift());
+      saveQ(); saveFailed();
+      renderQueueBadge();
+      toast('⚠ 1 lô gửi lỗi, đã tách riêng — báo quản lý');
+      continue;   // tiếp tục gửi các lô còn lại
+    }
+    saveQ();
+    hadError = r.msg || '';
+    break;        // chưa đủ 3 lần -> để lần flush sau thử lại
   }
-  flushing = false;
+  flushing = false; stopTick();
   if (!queue.length){
     const el = $('queueBar');
     el.classList.remove('hide'); el.classList.add('ok'); el.textContent = '✓ Đã gửi hết, không còn cuộn chờ';
     setTimeout(()=>{ if(!queue.length) el.classList.add('hide'); }, 4000);
+    renderFailBar();
   } else {
     renderQueueBadge();
+    if (hadError) console.warn('[TKSX] Gửi chưa xong:', hadError);
   }
+}
+
+// Khóa/mở nút gửi — công nhân bấm 2 lần trên máy chậm sẽ tạo 2 lô trùng nếu không chặn
+function lockSendBtn(id, label){
+  const b = $(id); if (!b) return null;
+  const old = b.textContent;
+  b.disabled = true; b.textContent = label;
+  return () => { b.disabled = false; b.textContent = old; };
 }
 
 // ---------- Xác nhận: lưu vào hàng đợi rồi cố gửi ----------
 $('btnConfirmSend').onclick = async () => {
+  if (sending) return;                 // chặn cú bấm thứ 2
   if (!batch.length){ toast('Chưa có dữ liệu'); return; }
-  const time = nowStr();
-  const rows = batch.map((b,i)=>({
-    time: time, loai: sel.mode, cn: sel.cn, may: sel.may,
-    cnCode: sel.cnCode, mayCode: sel.mayCode,
-    data: b.data, lsx: b.lsx, klyc: b.klyc,
-    phuongthuc: curMethod, klcuon: curKlcuon, ketqua: curAlloc[i]
-  }));
-  // Luôn lưu vào máy trước -> không bao giờ mất dữ liệu dù mất mạng
-  queue.push({ ts: Date.now(), batchId: genId(), rows: rows });
-  saveQ();
-  // Reset cuộn & về màn hình Thổi/In ngay (không chờ mạng)
-  try { await stopScan(); } catch(e){}
-  batch=[]; curAlloc=[]; curKlcuon=0; curMethod=''; lastCode=''; pendingQR=null; paused=false;
-  scanning=false;
-  $('pendingBox').classList.add('hide'); $('btnAddPending').classList.add('hide');
-  renderBatch();
-  showPhase('scan');
-  sel = { mode:'', cn:'', may:'', cnCode:'', mayCode:'' };
-  updateCrumbs();
-  show('step1');
-  renderQueueBadge();
-  if (navigator.onLine){ toast('📤 Đã lưu — đang gửi cuộn (' + rows.length + ' LSX)'); flushQueue(); }
-  else { toast('📦 Chưa có mạng — đã lưu tạm trên máy, sẽ tự gửi khi có mạng'); }
+  sending = true;
+  const unlock = lockSendBtn('btnConfirmSend', '⏳ Đang lưu...');
+  try {
+    const time = nowStr();
+    const rows = batch.map((b,i)=>({
+      time: time, loai: sel.mode, cn: sel.cn, may: sel.may,
+      cnCode: sel.cnCode, mayCode: sel.mayCode,
+      data: b.data, lsx: b.lsx, klyc: b.klyc,
+      phuongthuc: curMethod, klcuon: curKlcuon, ketqua: curAlloc[i]
+    }));
+    // XÓA batch NGAY, trước mọi await — nếu xóa sau await thì cú bấm thứ 2
+    // lọt vào khoảng chờ đó sẽ đẩy thêm 1 lô y hệt với batchId mới -> server ghi 2 lần
+    batch=[]; curAlloc=[]; curKlcuon=0; curMethod=''; lastCode=''; pendingQR=null; paused=false;
+    scanning=false;
+    // Luôn lưu vào máy trước -> không bao giờ mất dữ liệu dù mất mạng
+    queue.push({ ts: Date.now(), batchId: genId(), rows: rows });
+    saveQ();
+    // Reset cuộn & về màn hình Thổi/In ngay (không chờ mạng)
+    try { await stopScan(); } catch(e){}
+    $('pendingBox').classList.add('hide'); $('btnAddPending').classList.add('hide');
+    renderBatch();
+    showPhase('scan');
+    sel = { mode:'', cn:'', may:'', cnCode:'', mayCode:'' };
+    updateCrumbs();
+    show('step1');
+    renderQueueBadge();
+    if (navigator.onLine){ toast('📤 Đã lưu — đang gửi cuộn (' + rows.length + ' LSX)'); flushQueue(); }
+    else { toast('📦 Chưa có mạng — đã lưu tạm trên máy, sẽ tự gửi khi có mạng'); }
+  } finally {
+    // Dù có lỗi bất ngờ cũng phải mở lại nút, không được để nút chết
+    if (unlock) unlock();
+    sending = false;
+  }
 };
 
 // ---------- Nhập Phế ----------
@@ -878,25 +992,34 @@ $('pheTron').addEventListener('keydown', e => { if (e.key==='Enter'){ e.preventD
 $('pheMau').addEventListener('keydown', e => { if (e.key==='Enter'){ e.preventDefault(); $('btnPheSend').click(); } });
 
 $('btnPheSend').onclick = () => {
+  if (sending) return;                 // chặn cú bấm thứ 2
   const tron = Number($('pheTron').value) || 0;
   const mau = Number($('pheMau').value) || 0;
   if (tron <= 0 && mau <= 0){ toast('Nhập ít nhất 1 loại phế'); return; }
-  const time = nowStr();
-  const row = {
-    time: time, loai: sel.mode, cn: sel.cn, may: sel.may,
-    cnCode: sel.cnCode, mayCode: sel.mayCode,
-    pheTron: tron, pheMau: mau
-  };
-  queue.push({ ts: Date.now(), batchId: genId(), type: 'phe', rows: [row] });
-  saveQ();
-  toast('✅ Đã lưu phế: Trơn ' + tron + ' kg, Màu ' + mau + ' kg');
-  // Reset về step6 để nhập tiếp nếu cần
-  sel = { mode:'', cn:'', may:'', cnCode:'', mayCode:'' };
-  updateCrumbs();
-  appMode = 'sx';
-  show('step1');
-  renderQueueBadge();
-  if (navigator.onLine) flushQueue();
+  sending = true;
+  const unlockPhe = lockSendBtn('btnPheSend', '⏳ Đang lưu...');
+  try {
+    $('pheTron').value = ''; $('pheMau').value = '';   // xóa ngay, tránh gửi lại cùng số liệu
+    const time = nowStr();
+    const row = {
+      time: time, loai: sel.mode, cn: sel.cn, may: sel.may,
+      cnCode: sel.cnCode, mayCode: sel.mayCode,
+      pheTron: tron, pheMau: mau
+    };
+    queue.push({ ts: Date.now(), batchId: genId(), type: 'phe', rows: [row] });
+    saveQ();
+    toast('✅ Đã lưu phế: Trơn ' + tron + ' kg, Màu ' + mau + ' kg');
+    // Reset về step6 để nhập tiếp nếu cần
+    sel = { mode:'', cn:'', may:'', cnCode:'', mayCode:'' };
+    updateCrumbs();
+    appMode = 'sx';
+    show('step1');
+    renderQueueBadge();
+    if (navigator.onLine) flushQueue();
+  } finally {
+    if (unlockPhe) unlockPhe();
+    sending = false;
+  }
 };
 
 // ---------- PIN & Dashboard ----------
@@ -1604,20 +1727,29 @@ $('chuyenManualFld').addEventListener('keydown', e => { if(e.key==='Enter'){ e.p
 
 // Xác nhận chuyển cuộn — gửi danh sách LSX, server tự tính KL từ data SX
 $('btnChuyenSend').onclick = async () => {
+  if (sending) return;                 // chặn cú bấm thứ 2
   if (!chuyenBatch.length){ toast('Chưa quét QR nào'); return; }
-  const time = nowStr();
-  const rows = chuyenBatch.map(b => ({ time: time, lsx: b.lsx }));
-  queue.push({ ts: Date.now(), batchId: genId(), type: 'chuyencuon', rows: rows });
-  saveQ();
-  try { await stopChuyenScan(); } catch(e){}
-  const n = chuyenBatch.length;
-  chuyenBatch = []; chuyenLastCode = '';
-  renderChuyenBatch();
-  $('crumbs').innerHTML = '';
-  show('step1');
-  renderQueueBadge();
-  if (navigator.onLine){ toast('📤 Đã lưu — đang gửi chuyển cuộn (' + n + ' LSX)'); flushQueue(); }
-  else { toast('📦 Đã lưu tạm, sẽ tự gửi khi có mạng'); }
+  sending = true;
+  const unlock = lockSendBtn('btnChuyenSend', '⏳ Đang lưu...');
+  try {
+    const time = nowStr();
+    const rows = chuyenBatch.map(b => ({ time: time, lsx: b.lsx }));
+    const n = chuyenBatch.length;
+    // XÓA danh sách NGAY, trước await — tránh cú bấm thứ 2 tạo lô chuyển cuộn trùng
+    chuyenBatch = []; chuyenLastCode = '';
+    queue.push({ ts: Date.now(), batchId: genId(), type: 'chuyencuon', rows: rows });
+    saveQ();
+    try { await stopChuyenScan(); } catch(e){}
+    renderChuyenBatch();
+    $('crumbs').innerHTML = '';
+    show('step1');
+    renderQueueBadge();
+    if (navigator.onLine){ toast('📤 Đã lưu — đang gửi chuyển cuộn (' + n + ' LSX)'); flushQueue(); }
+    else { toast('📦 Đã lưu tạm, sẽ tự gửi khi có mạng'); }
+  } finally {
+    if (unlock) unlock();
+    sending = false;
+  }
 };
 
 $('btnChuyenBack').onclick = async () => { await stopChuyenScan(); chuyenBatch=[]; renderChuyenBatch(); $('crumbs').innerHTML=''; show('step1'); };
@@ -1697,6 +1829,18 @@ async function goHome(){
   const el = $(id);
   if (el) el.onclick = goHome;
 });
+
+// Bấm vào thanh đỏ = thử gửi lại thủ công các lô lỗi (dùng sau khi quản lý đã xử lý nguyên nhân)
+$('failBar').onclick = () => {
+  if (!queueFailed.length) return;
+  const n = queueFailed.length;
+  queueFailed.forEach(it => { it.tries = 0; queue.push(it); });
+  queueFailed = [];
+  saveQ(); saveFailed();
+  renderQueueBadge();
+  toast('🔄 Đang thử gửi lại ' + n + ' lô lỗi');
+  flushQueue();
+};
 
 // ---------- Tự gửi lại khi có mạng ----------
 window.addEventListener('online', () => { toast('🌐 Đã có mạng — đang gửi dữ liệu chờ'); flushQueue(); });
